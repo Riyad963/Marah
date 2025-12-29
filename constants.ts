@@ -1,0 +1,4 @@
+
+export const PREDEFINED_LOCATIONS = {
+  ALGERIA_WILAYAS: []
+};

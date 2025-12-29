@@ -1,0 +1,28 @@
+
+{
+  "short_name": "مراح",
+  "name": "مراح - نظام إدارة الثروة الحيوانية",
+  "description": "نظام متطور لإدارة وتتبع المواشي باستخدام الذكاء الاصطناعي و GPS",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/Tx36fB5C/20251228-105841.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.ibb.co/Tx36fB5C/20251228-105841.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#051810",
+  "background_color": "#051810",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ar-SA",
+  "dir": "rtl",
+  "categories": ["business", "productivity", "utilities"]
+}

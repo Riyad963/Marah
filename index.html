@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>مراح - marah</title>
+    
+    <!-- PWA Primary Tags -->
+    <meta name="theme-color" content="#051810">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="مراح">
+    
+    <link rel="apple-touch-icon" href="https://i.ibb.co/Tx36fB5C/20251228-105841.png">
+    <link rel="manifest" href="./public/manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- External SDKs for Production -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #051810;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .glass-card {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease forwards;
+        }
+        .leaflet-control-zoom { display: none !important; }
+        .leaflet-container { background: #051810 !important; }
+        
+        /* Stripe Element Styling */
+        .StripeElement {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* المطلب البرمجي: تنسيق أيقونة البحث */
+        #search-input-container {
+            position: relative;
+            width: 100%;
+        }
+        #search-input-container input {
+            padding-right: 48px !important; /* مساحة للأيقونة على اليمين */
+            transition: all 0.3s ease;
+        }
+        #search-input-container .search-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 10;
+            transition: color 0.3s ease;
+        }
+        #search-input-container input:focus + .search-icon {
+            color: #4ade80; /* تغيير لون الأيقونة عند التركيز */
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "leaflet": "https://esm.sh/leaflet@^1.9.4",
+    "jspdf": "https://esm.sh/jspdf@^2.5.1",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+    "firebase/messaging": "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.0"
+  }
+}
+</script>
+</head>
+<body class="text-white selection:bg-[#5F8D75] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+</body>
+</html>
