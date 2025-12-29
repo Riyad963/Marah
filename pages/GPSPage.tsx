@@ -21,13 +21,6 @@ interface AlarmSchedule {
   end: string;
 }
 
-interface ShepherdInfo {
-  name: string;
-  status: 'online' | 'weak' | 'offline';
-  battery: number;
-  lastUpdate: string;
-}
-
 const INITIAL_CENTER: [number, number] = [34.759297, 3.588139]; 
 const APP_LOGO_URL = "https://i.ibb.co/Tx36fB5C/20251228-105841.png";
 
@@ -36,6 +29,7 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
   const mapRef = useRef<L.Map | null>(null);
   const livestockMarkerRef = useRef<L.Marker | null>(null);
   const fenceLayersRef = useRef<Record<string, L.Layer>>({});
+  const centerPinRef = useRef<Record<string, L.Marker>>({});
 
   const [activeLayer, setActiveLayer] = useState<'street' | 'satellite'>('satellite');
   const [livestockPos, setLivestockPos] = useState({ lat: INITIAL_CENTER[0], lng: INITIAL_CENTER[1], speed: 0 });
@@ -45,7 +39,6 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
   const [isSimulation, setIsSimulation] = useState(false); 
   const [isLeftNavOpen, setIsLeftNavOpen] = useState(false);
   
-  // حالات إدارة السياج المحدد
   const [selectedFenceId, setSelectedFenceId] = useState<string | null>(null);
   const [alarmSchedule, setAlarmSchedule] = useState<AlarmSchedule>({ enabled: false, start: '20:00', end: '06:00' });
 
@@ -59,7 +52,6 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
 
   useEffect(() => { storageService.save('marah_fences', fences); }, [fences]);
 
-  // دالة لحساب إحداثيات المستطيل المدوّر
   const getRotatedRectCoordinates = (center: [number, number], width: number, height: number, angleDeg: number) => {
     const lat = center[0];
     const lng = center[1];
@@ -79,12 +71,14 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
     });
   };
 
-  // رسم الأسيجة على الخريطة
   useEffect(() => {
     if (!mapRef.current) return;
 
     (Object.values(fenceLayersRef.current) as L.Layer[]).forEach(layer => layer.remove());
+    (Object.values(centerPinRef.current) as L.Marker[]).forEach(pin => pin.remove());
+    
     fenceLayersRef.current = {};
+    centerPinRef.current = {};
 
     fences.forEach(f => {
       let layer: L.Layer;
@@ -117,12 +111,41 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
       });
 
       fenceLayersRef.current[f.id] = layer;
+
+      if (isEditMode) {
+        const movePin = L.marker(f.center, {
+          draggable: true,
+          icon: L.divIcon({
+            className: 'fence-move-pin',
+            html: `<div style="background:${isSelected ? '#f97316' : '#ffffff'}; width:24px; height:24px; border-radius:50%; border:3px solid #1D3C2B; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(0,0,0,0.3);"><svg style="width:14px; height:14px; color:${isSelected ? '#fff' : '#1D3C2B'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7l4-4m0 0l4 4m-4-4v18m0 0l-4-4m4 4l4-4"/></svg></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          })
+        }).addTo(mapRef.current!);
+
+        movePin.on('drag', (e: any) => {
+          const newPos = e.target.getLatLng();
+          if (f.type === 'circle') {
+            (layer as L.Circle).setLatLng(newPos);
+          } else {
+             const newCoords = getRotatedRectCoordinates([newPos.lat, newPos.lng], f.width, f.height, f.rotation);
+             (layer as L.Polygon).setLatLngs(newCoords as any);
+          }
+        });
+
+        movePin.on('dragend', (e: any) => {
+          const newPos = e.target.getLatLng();
+          setFences(prev => prev.map(item => item.id === f.id ? { ...item, center: [newPos.lat, newPos.lng] } : item));
+          setSelectedFenceId(f.id);
+        });
+
+        centerPinRef.current[f.id] = movePin;
+      }
     });
   }, [fences, isEditMode, selectedFenceId]);
 
-  // إضافة سياج جديد
   const addNewFence = (type: 'circle' | 'square') => {
-    const center = mapRef.current ? (mapRef.current.getCenter().lat ? [mapRef.current.getCenter().lat, mapRef.current.getCenter().lng] : INITIAL_CENTER) : INITIAL_CENTER;
+    const center = mapRef.current ? [mapRef.current.getCenter().lat, mapRef.current.getCenter().lng] : INITIAL_CENTER;
     const newFence: Fence = {
       id: Date.now().toString(),
       center: center as [number, number],
@@ -158,7 +181,6 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
       if (f.type === 'circle') {
         if (L.latLng(f.center).distanceTo(L.latLng(lat, lng)) <= f.radius) isInsideAny = true;
       } else {
-        // التحقق من وجود النقطة داخل المضلع (المربع المدوّر)
         const coords = getRotatedRectCoordinates(f.center, f.width, f.height, f.rotation);
         const polygon = L.polygon(coords);
         if (polygon.getBounds().contains(L.latLng(lat, lng))) isInsideAny = true;
@@ -202,11 +224,24 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
 
   const selectedFence = fences.find(f => f.id === selectedFenceId);
 
+  const handleVariableSnap = (rawVal: number) => {
+    if (rawVal <= 100) {
+      return Math.max(10, Math.round(rawVal / 5) * 5);
+    } else {
+      return Math.round(rawVal / 50) * 50;
+    }
+  };
+
   return (
     <div className={`fixed inset-0 z-0 ${isDarkMode ? 'bg-[#051810]' : 'bg-[#EBF2E5]'}`}>
       <div ref={mapContainerRef} className="absolute inset-0 z-0 h-full w-full" />
       
-      {/* شريط معلومات علوي */}
+      {isEditMode && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 bg-orange-500 text-white px-6 py-2 rounded-full font-black text-[10px] animate-pulse shadow-xl border border-white/40">
+          وضع تحريك السياج: اسحب الدوائر البيضاء لتغيير الموقع
+        </div>
+      )}
+
       <div className="absolute top-6 inset-x-0 flex justify-center z-10 px-8 pointer-events-none">
         <div className={`backdrop-blur-xl rounded-[2rem] px-8 py-3 flex items-center gap-8 shadow-2xl pointer-events-auto border border-white/10 ${systemMode === 'ALERT' ? 'bg-red-600' : 'bg-[#1D3C2B]/90'}`}>
           <div className="text-center min-w-[80px]">
@@ -220,7 +255,6 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
         </div>
       </div>
 
-      {/* شريط الأدوات الأيسر */}
       <div className="fixed left-4 lg:left-8 bottom-6 z-50 flex flex-col items-center gap-4 pointer-events-none">
         <aside className="flex flex-col items-center gap-3 transition-all duration-700">
            {navTools.map((tool, index) => (
@@ -229,66 +263,101 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
              </button>
            ))}
         </aside>
-        <button onClick={() => setIsLeftNavOpen(!isLeftNavOpen)} className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-[#1D3C2B] flex items-center justify-center shadow-2xl z-50 pointer-events-auto border-2 border-white/20 active:scale-90 transition-transform"><img src={APP_LOGO_URL} className="w-10 h-10 lg:w-14 lg:h-14 object-contain" /></button>
+        <button onClick={() => setIsLeftNavOpen(!isLeftNavOpen)} className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-[#1D3C2B] border-2 border-white flex items-center justify-center shadow-2xl z-50 pointer-events-auto active:scale-90 transition-transform"><img src={APP_LOGO_URL} className="w-10 h-10 lg:w-14 lg:h-14 object-contain" /></button>
       </div>
 
-      {/* شريط التحكم في السياج السفلي */}
       {isEditMode && (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] bg-black/80 backdrop-blur-xl border-t border-white/20 p-4 animate-fade-in flex flex-col gap-4">
-          <div className="flex items-center overflow-x-auto no-scrollbar gap-4 pb-2">
+        <div className="fixed bottom-32 left-4 right-4 z-[100] bg-black/85 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] p-4 animate-fade-in shadow-2xl flex flex-col gap-4 max-w-lg mx-auto overflow-hidden">
+          <div className="flex items-center overflow-x-auto no-scrollbar gap-5 py-2 px-1 touch-pan-x scroll-smooth">
             
-            {/* إضافة سياج */}
-            <div className="flex gap-2 shrink-0 border-l border-white/10 pl-4">
-              <button onClick={() => addNewFence('circle')} className="px-4 py-2 bg-white/10 rounded-xl text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-1 border border-white/10">
-                <div className="w-4 h-4 rounded-full border-2 border-white"></div>
+            {/* أزرار الإضافة */}
+            <div className="flex gap-3 shrink-0 border-l border-white/10 pl-5">
+              <button onClick={() => addNewFence('circle')} className="px-5 py-3 bg-white/10 rounded-[1.5rem] text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-2 border border-white/10 transition-colors">
+                <div className="w-5 h-5 rounded-full border-2 border-white"></div>
                 إضافة دائري
               </button>
-              <button onClick={() => addNewFence('square')} className="px-4 py-2 bg-white/10 rounded-xl text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-1 border border-white/10">
-                <div className="w-4 h-4 border-2 border-white"></div>
+              <button onClick={() => addNewFence('square')} className="px-5 py-3 bg-white/10 rounded-[1.5rem] text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-2 border border-white/10 transition-colors">
+                <div className="w-5 h-5 border-2 border-white"></div>
                 إضافة مربع
               </button>
             </div>
 
             {/* أدوات التحكم في السياج المحدد */}
             {selectedFence && (
-              <div className="flex items-center gap-6 shrink-0 border-l border-white/10 pl-4">
+              <div className="flex items-center gap-6 shrink-0 border-l border-white/10 pl-5">
                 {selectedFence.type === 'circle' ? (
-                  <div className="flex flex-col gap-1 w-32">
-                    <label className="text-[8px] text-white/50 font-bold">القطر: {selectedFence.radius}م</label>
-                    <input type="range" min="50" max="1000" step="10" value={selectedFence.radius} onChange={(e) => updateSelectedFence({ radius: parseInt(e.target.value) })} className="w-full accent-orange-500" />
+                  <div className="flex flex-col gap-2 w-40">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">القطر</label>
+                      <span className="text-[10px] text-orange-400 font-black">{selectedFence.radius}م</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="1000" 
+                      step="5" 
+                      value={selectedFence.radius} 
+                      onChange={(e) => updateSelectedFence({ radius: handleVariableSnap(parseInt(e.target.value)) })} 
+                      className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500 cursor-pointer" 
+                    />
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-col gap-1 w-24">
-                      <label className="text-[8px] text-white/50 font-bold">العرض: {selectedFence.width}م</label>
-                      <input type="range" min="50" max="1000" step="10" value={selectedFence.width} onChange={(e) => updateSelectedFence({ width: parseInt(e.target.value) })} className="w-full accent-orange-500" />
+                    <div className="flex flex-col gap-2 w-32">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">العرض</label>
+                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.width}م</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="1000" 
+                        step="5" 
+                        value={selectedFence.width} 
+                        onChange={(e) => updateSelectedFence({ width: handleVariableSnap(parseInt(e.target.value)) })} 
+                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" 
+                      />
                     </div>
-                    <div className="flex flex-col gap-1 w-24">
-                      <label className="text-[8px] text-white/50 font-bold">الطول: {selectedFence.height}م</label>
-                      <input type="range" min="50" max="1000" step="10" value={selectedFence.height} onChange={(e) => updateSelectedFence({ height: parseInt(e.target.value) })} className="w-full accent-orange-500" />
+                    <div className="flex flex-col gap-2 w-32">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">الطول</label>
+                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.height}م</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="1000" 
+                        step="5" 
+                        value={selectedFence.height} 
+                        onChange={(e) => updateSelectedFence({ height: handleVariableSnap(parseInt(e.target.value)) })} 
+                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" 
+                      />
                     </div>
-                    <div className="flex flex-col gap-1 w-24">
-                      <label className="text-[8px] text-white/50 font-bold">التدوير: {selectedFence.rotation}°</label>
-                      <input type="range" min="0" max="360" step="1" value={selectedFence.rotation} onChange={(e) => updateSelectedFence({ rotation: parseInt(e.target.value) })} className="w-full accent-orange-500" />
+                    <div className="flex flex-col gap-2 w-32">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">التدوير</label>
+                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.rotation}°</span>
+                      </div>
+                      <input type="range" min="0" max="360" step="1" value={selectedFence.rotation} onChange={(e) => updateSelectedFence({ rotation: parseInt(e.target.value) })} className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" />
                     </div>
                   </>
                 )}
-                <button onClick={deleteSelectedFence} className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-[10px] font-black border border-red-500/20">حذف</button>
+                <button onClick={deleteSelectedFence} className="px-5 py-3 bg-red-500/10 text-red-400 rounded-[1.5rem] text-[10px] font-black border border-red-500/20 active:bg-red-500/20 transition-all">حذف السياج</button>
               </div>
             )}
 
-            {/* توقيت الإنذار */}
-            <div className="flex items-center gap-3 shrink-0">
-               <div className="flex flex-col gap-1">
-                  <label className="text-[8px] text-white/50 font-bold">توقيت الإنذار (من-إلى)</label>
+            {/* إعدادات الإنذار والحفظ */}
+            <div className="flex items-center gap-5 shrink-0">
+               <div className="flex flex-col gap-2">
+                  <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">توقيت الإنذار الذكي</label>
                   <div className="flex items-center gap-2">
-                    <input type="time" value={alarmSchedule.start} onChange={(e) => setAlarmSchedule({...alarmSchedule, start: e.target.value})} className="bg-white/10 text-white text-[10px] p-1 rounded border border-white/20" />
-                    <input type="time" value={alarmSchedule.end} onChange={(e) => setAlarmSchedule({...alarmSchedule, end: e.target.value})} className="bg-white/10 text-white text-[10px] p-1 rounded border border-white/20" />
+                    <input type="time" value={alarmSchedule.start} onChange={(e) => setAlarmSchedule({...alarmSchedule, start: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-orange-500" />
+                    <span className="text-white/30 text-[10px]">إلى</span>
+                    <input type="time" value={alarmSchedule.end} onChange={(e) => setAlarmSchedule({...alarmSchedule, end: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-orange-500" />
                   </div>
                </div>
-               <button onClick={() => { soundService.playSuccess(); setIsEditMode(false); }} className="px-8 py-3 bg-[#1D3C2B] text-white rounded-2xl text-xs font-black shadow-xl border border-white/20">حفظ السياج</button>
+               <button onClick={() => { soundService.playSuccess(); setIsEditMode(false); }} className="px-8 py-4 bg-[#1D3C2B] text-white rounded-[1.8rem] text-xs font-black shadow-xl border border-white/20 active:scale-95 transition-all hover:brightness-110">تأكيد وحفظ</button>
             </div>
-
           </div>
         </div>
       )}

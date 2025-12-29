@@ -33,7 +33,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     name: 'مستخدم جديد',
     plan: 'مجاني',
     role: userRole || 'مالك',
-    farmName: 'مراح البركة'
+    farmName: 'مراح البركة',
+    phone: '',
+    country: ''
   });
 
   const [settings, setSettings] = useState({
@@ -93,7 +95,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       }
   };
 
-  // Styles
   const sectionClass = `rounded-[2rem] border p-6 mb-6 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100 shadow-sm'}`;
   const labelClass = `text-[10px] font-black uppercase tracking-widest mb-5 block ${isDarkMode ? 'text-green-400/80' : 'text-[#1D3C2B]/60'}`;
   const itemClass = `flex items-center justify-between py-4 border-b last:border-0 ${isDarkMode ? 'border-white/5' : 'border-gray-50'}`;
@@ -102,7 +103,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="w-full max-w-md mx-auto h-full flex flex-col pb-40 px-4 overflow-y-auto no-scrollbar" dir="rtl">
       
-      {/* 1. Header Visual */}
       <div className="py-10 flex flex-col items-center">
         <div className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-[#1D3C2B] to-[#051810] flex items-center justify-center shadow-2xl mb-4 border border-white/10 relative group">
            <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -118,9 +118,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </div>
 
-      {/* 2. الملف الشخصي (Profile) */}
       <div className={sectionClass}>
-        <span className={labelClass}>الملف الشخصي والمزرعة</span>
+        <span className={labelClass}>الملف الشخصي والحساب</span>
         <div className={itemClass}>
            <div className="flex items-center gap-4">
               <div className={iconBox('indigo')}>
@@ -128,14 +127,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               </div>
               <div className="flex flex-col">
                  <span className={`text-sm font-black ${isDarkMode ? 'text-white' : 'text-[#1D3C2B]'}`}>{userData.name}</span>
-                 <span className="text-[10px] font-bold opacity-40">{userData.role} • {userData.farmName}</span>
+                 <span className="text-[10px] font-bold opacity-40">{userData.role} • {userData.farmName !== '-' ? userData.farmName : 'لا توجد مزرعة'}</span>
               </div>
            </div>
            <button className="text-[10px] font-black text-indigo-400 bg-indigo-400/10 px-3 py-1.5 rounded-lg border border-indigo-400/20">تعديل</button>
         </div>
+        <div className={itemClass}>
+           <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>رقم الهاتف</span>
+           <span className="text-xs font-black opacity-60 tracking-wider" dir="ltr">{userData.phone || '---'}</span>
+        </div>
+        <div className={itemClass}>
+           <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>الدولة</span>
+           <span className="text-xs font-black opacity-60">{userData.country || '---'}</span>
+        </div>
       </div>
 
-      {/* 3. اللغة والتوطين (Language & Localization) */}
       <div className={sectionClass}>
         <span className={labelClass}>اللغة والتوطين</span>
         <div className={itemClass}>
@@ -156,7 +162,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </div>
 
-      {/* 4. المظهر (Appearance) */}
       <div className={sectionClass}>
         <span className={labelClass}>المظهر والتجربة</span>
         <div className={itemClass}>
@@ -172,7 +177,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </div>
 
-      {/* 5. إدارة القطيع (Herd Config) */}
       <div className={sectionClass}>
         <span className={labelClass}>إدارة فئة الماشية النشطة</span>
         <div className={itemClass}>
@@ -192,76 +196,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <option value="أبقار" className="text-black">أبقار</option>
             </select>
         </div>
-        <p className={`text-[8px] font-bold opacity-40 mt-3 ${isDarkMode ? 'text-white' : 'text-[#1D3C2B]'}`}>* سيقوم التطبيق بعرض بيانات الفئة المختارة فقط وتصفية بقية المحتوى.</p>
       </div>
 
-      {/* إدارة العمال (Workers Management) */}
       <div className={sectionClass}>
-        <span className={labelClass}>إدارة الموارد البشرية</span>
-        <div className={itemClass} onClick={() => onNavigate?.('العمال')}>
-            <div className="flex items-center gap-4">
-                <div className={iconBox('blue')}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                </div>
-                <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>سجلات العمال والموظفين</span>
-            </div>
-            <svg className="w-4 h-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+        <span className={labelClass}>البيانات والتخزين</span>
+        <div className={itemClass}>
+           <button onClick={clearAppCache} className="text-xs font-bold text-red-500">حذف التخزين المؤقت وتسجيل الخروج</button>
         </div>
       </div>
 
-      {/* 6. الأجهزة والتتبع (Devices & GPS) */}
-      <div className={sectionClass}>
-        <span className={labelClass}>الأجهزة وتكنولوجيا التتبع</span>
-        <div className={itemClass}>
-           <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>تكرار تحديث الـ GPS</span>
-           <select 
-             value={settings.gpsFrequency}
-             onChange={(e) => updateSetting('gpsFrequency', e.target.value)}
-             className={`text-xs font-black bg-transparent outline-none ${isDarkMode ? 'text-white' : 'text-[#1D3C2B]'}`}
-           >
-              <option value="10" className="text-black">كل 10 ثوانٍ</option>
-              <option value="30" className="text-black">كل 30 ثانية</option>
-              <option value="60" className="text-black">كل دقيقة</option>
-              <option value="300" className="text-black">كل 5 دقائق</option>
-           </select>
-        </div>
-        <div className={itemClass}>
-           <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>حساسية السياج الجغرافي</span>
-           <span className="text-[10px] font-black text-green-500">عالية</span>
-        </div>
-      </div>
-
-      {/* 7. التنبيهات والذكاء (Alerts & AI) */}
-      <div className={sectionClass}>
-        <span className={labelClass}>نظام التنبيهات والذكاء</span>
-        <div className={itemClass}>
-           <div className="flex items-center gap-4">
-              <div className={iconBox('red')}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-              </div>
-              <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>التنبيهات الصوتية</span>
-           </div>
-           <button onClick={() => updateSetting('soundEnabled', !settings.soundEnabled)} className={`w-12 h-6 rounded-full p-1 transition-all ${settings.soundEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
-              <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.soundEnabled ? 'translate-x-0' : '-translate-x-6'}`}></div>
-           </button>
-        </div>
-      </div>
-
-      {/* 8. البيانات والتخزين (Data & Storage) */}
-      <div className={sectionClass}>
-        <span className={labelClass}>البيانات والتخزين السحابي</span>
-        <div className={itemClass}>
-           <span className={`text-xs font-bold ${isDarkMode ? 'text-white/80' : 'text-[#1D3C2B]'}`}>المزامنة التلقائية</span>
-           <button onClick={() => updateSetting('autoSync', !settings.autoSync)} className={`w-12 h-6 rounded-full p-1 transition-all ${settings.autoSync ? 'bg-blue-500' : 'bg-gray-300'}`}>
-              <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settings.autoSync ? 'translate-x-0' : '-translate-x-6'}`}></div>
-           </button>
-        </div>
-        <div className={itemClass}>
-           <button onClick={clearAppCache} className="text-xs font-bold text-red-500">حذف التخزين المؤقت (Reset)</button>
-        </div>
-      </div>
-
-      {/* 9. الاشتراك (Subscription) */}
       <div className="mb-6">
         <button 
           onClick={() => setShowSubscriptionModal(true)}
@@ -278,7 +221,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         </button>
       </div>
 
-      {/* Footer Info */}
       <div className="mt-6 flex justify-between items-center opacity-40 px-6">
           <span className="text-[8px] font-black uppercase tracking-widest text-white">Marah OS v2.0.5</span>
           <span className="text-[8px] font-black uppercase tracking-widest text-white">Enterprise Edition</span>
@@ -290,10 +232,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <h2 className="text-white text-2xl font-black">خطط الاشتراك السنوية</h2>
                 <button onClick={() => setShowSubscriptionModal(false)} className="text-white/50 p-2"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
            </div>
-
            <div className="flex flex-col gap-6 pb-20">
-              
-              {/* 1. Free Plan */}
               <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                       <div>
@@ -302,69 +241,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                       </div>
                       <span className="text-white font-black text-lg">0$ <span className="text-[10px] opacity-40">/ سنوياً</span></span>
                   </div>
-                  <div className="space-y-3 mb-6">
-                      <div className="flex gap-2 text-white/70 text-xs font-bold items-start"><span className="text-green-500">✓</span> إدارة الماشية الأساسية (إضافة، فئات، ملاحظات)</div>
-                      <div className="flex gap-2 text-white/70 text-xs font-bold items-start"><span className="text-green-500">✓</span> سجلات صحية أساسية (ملاحظات يدوية فقط)</div>
-                      <div className="flex gap-2 text-white/70 text-xs font-bold items-start"><span className="text-green-500">✓</span> عرض البيانات داخل التطبيق (بدون تصدير)</div>
-                      <div className="flex gap-2 text-white/70 text-xs font-bold items-start"><span className="text-green-500">✓</span> استخدام بدون إنترنت (تخزين محلي فقط)</div>
-                  </div>
                   <button className="w-full py-4 rounded-2xl bg-white/10 text-white font-black text-sm opacity-50 cursor-default">خطتك الحالية</button>
               </div>
-
-              {/* 2. Advanced Plan */}
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-600/20 border border-blue-500/30 rounded-[2.5rem] p-6 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] font-black px-4 py-1 rounded-br-2xl">الأكثر طلباً</div>
-                  <div className="flex justify-between items-start mb-4 mt-2">
-                      <div>
-                          <h3 className="text-white text-xl font-black">Advanced Plan</h3>
-                          <p className="text-blue-300 text-[10px] font-bold tracking-widest uppercase">الخطة المتقدمة</p>
-                      </div>
-                      <span className="text-white font-black text-lg">20 USD <span className="text-[10px] opacity-40">/ سنوياً</span></span>
-                  </div>
-                  <div className="space-y-3 mb-6">
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> تتبع GPS أساسي (عرض الموقع + سياج واحد)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> إدارة الأعلاف (حاسبة الاستهلاك + تنبيهات المخزون)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> سجلات صحية متقدمة (تطعيمات + سجلات ولادة)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> تقارير احترافية (تصدير PDF و Excel)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> مستخدم واحد (المالك)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-blue-400">✓</span> استخدام بدون إنترنت + مزامنة أساسية</div>
-                  </div>
-                  <button 
-                    onClick={() => handleUpgrade('advanced_20')}
-                    disabled={isProcessing}
-                    className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-lg active:scale-95 transition-all"
-                  >
-                    {isProcessing ? "جاري..." : "اشترك الآن"}
-                  </button>
-              </div>
-
-              {/* 3. Pro Plan */}
-              <div className="bg-gradient-to-br from-amber-600/40 to-amber-900/20 border border-amber-500/50 rounded-[2.5rem] p-6 flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                      <div>
-                          <h3 className="text-amber-400 text-xl font-black">Pro Plan</h3>
-                          <p className="text-amber-400/60 text-[10px] font-bold tracking-widest uppercase">باقة المحترفين</p>
-                      </div>
-                      <span className="text-white font-black text-lg">60 USD <span className="text-[10px] opacity-40">/ سنوياً</span></span>
-                  </div>
-                  <div className="space-y-3 mb-6">
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> المستشار الذكي AI (تحليل صحي + أمني + توصيات)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> تتبع GPS متطور (سياجات متعددة + تنبيهات مجدولة)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> شجرة العائلة الوراثية وسجلات التكاثر كاملة</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> إدارة الموارد البشرية (أدوار وصلاحيات + سجلات عمال)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> تقارير مؤسسية (PDF و Excel جاهزة للتدقيق)</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> دعم فني ذو أولوية</div>
-                      <div className="flex gap-2 text-white text-xs font-bold items-start"><span className="text-amber-500">✓</span> مزامنة سحابية كاملة + وضع الأوفلاين</div>
-                  </div>
-                  <button 
-                    onClick={() => handleUpgrade('pro_60')}
-                    disabled={isProcessing}
-                    className="w-full py-4 rounded-2xl bg-amber-500 text-black font-black text-sm shadow-lg active:scale-95 transition-all"
-                  >
-                    {isProcessing ? "جاري..." : "تفعيل باقة الاحتراف"}
-                  </button>
-              </div>
-
            </div>
         </div>
       )}
