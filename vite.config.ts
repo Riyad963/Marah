@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
+    base: './', // Important for Capacitor
     build: {
       outDir: 'dist',
       sourcemap: false

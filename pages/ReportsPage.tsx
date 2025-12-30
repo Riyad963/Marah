@@ -64,7 +64,7 @@ const ReportsPage: React.FC<{ userRole: string; userCurrency: string; isDarkMode
   const StatItem = ({ label, value, unit, color = "white" }: any) => (
     <div className="flex justify-between items-center py-2.5 border-b border-white/5 last:border-0">
       <span className="text-[11px] font-bold text-white/60">{label}</span>
-      <span className={`text-xs font-black text-${color}-400`}>{value} <span className="text-[9px] opacity-40">{unit}</span></span>
+      <span className={`text-sm font-black text-${color}-400`}>{value} <span className="text-[10px] opacity-40">{unit}</span></span>
     </div>
   );
 
@@ -72,9 +72,9 @@ const ReportsPage: React.FC<{ userRole: string; userCurrency: string; isDarkMode
     <div className="w-full max-w-md mx-auto h-full flex flex-col pb-40 no-scrollbar overflow-y-auto px-4" dir="rtl">
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 bg-gradient-to-br from-[#1D3C2B] to-[#051810] rounded-2xl flex items-center justify-center mb-4 border border-white/10">
-           <img src={APP_LOGO_URL} className="w-10 h-10" />
+           <img src={APP_LOGO_URL} className="w-10 h-10 animate-logo-cinematic" />
         </div>
-        <h2 className="text-white text-xl font-black">تقارير المنشأة</h2>
+        <h2 className="text-white text-2xl font-black">تقارير المنشأة</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-8">

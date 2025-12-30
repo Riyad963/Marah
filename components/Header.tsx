@@ -4,6 +4,7 @@ import { ActivePage } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
 import { soundService } from '../services/soundService.ts';
 import { aiService } from '../services/aiService.ts';
+import { useLanguage } from '../contexts/LanguageContext.tsx';
 
 interface HeaderProps {
   activePage: ActivePage;
@@ -11,6 +12,7 @@ interface HeaderProps {
 }
 
 export default function Header({ activePage, countryName }: HeaderProps) {
+  const { t, language } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -52,7 +54,7 @@ export default function Header({ activePage, countryName }: HeaderProps) {
   useEffect(() => {
     const fetchAlerts = async () => {
       setIsLoadingAlerts(true);
-      const aiAlerts = await aiService.generateSmartAlerts();
+      const aiAlerts = await aiService.generateSmartAlerts(language);
       
       if (aiAlerts && Array.isArray(aiAlerts)) {
         const formatted = aiAlerts.map((alert: any, index: number) => ({
@@ -69,13 +71,10 @@ export default function Header({ activePage, countryName }: HeaderProps) {
         setUnreadCount(formatted.length);
         
         // Smart Sound Logic Enforcement
-        // Determine the highest priority alert to decide sound
         const criticalAlert = formatted.find((n: any) => n.originalSeverity === 'high');
         const warningAlert = formatted.find((n: any) => n.originalSeverity === 'medium');
         
         if (criticalAlert) {
-            // Map AI 'high' to Policy 'critical' or 'high' based on context
-            // Here assuming AI 'high' = Policy 'critical' for safety
             soundService.playSmartAlert('critical', criticalAlert.source, activePage);
         } else if (warningAlert) {
             soundService.playSmartAlert('medium', warningAlert.source, activePage);
@@ -85,19 +84,18 @@ export default function Header({ activePage, countryName }: HeaderProps) {
     };
 
     fetchAlerts();
-  }, [activePage]); // Re-run if page changes? No, only on mount usually, but we might want to check alerts periodically in real app. For now keeping simple.
+  }, [activePage, language]);
 
   const dateString = useMemo(() => {
-    return currentTime.toLocaleDateString('en-GB', {
+    return currentTime.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-GB', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       }).replace(/\//g, ' / ');
-  }, [currentTime]);
+  }, [currentTime, language]);
 
   const isGPS = activePage === 'GPS';
 
-  // Sync Icon Logic
   const getSyncIcon = () => {
     switch(syncStatus) {
       case 'offline': 
@@ -117,7 +115,6 @@ export default function Header({ activePage, countryName }: HeaderProps) {
     }
   };
 
-  // Swipe Handlers
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndRef.current = null;
     touchStartRef.current = e.targetTouches[0].clientX;
@@ -134,27 +131,41 @@ export default function Header({ activePage, countryName }: HeaderProps) {
     const isRightSwipe = distance < -50;
 
     if (isLeftSwipe || isRightSwipe) {
-      // Visual dismiss only
       setNotifications(prev => prev.filter(n => n.id !== id));
     }
+  };
+
+  // Helper to map page IDs to keys
+  const getPageKey = (id: string) => {
+    const map: Record<string, string> = {
+        'الرئيسية': 'nav_home',
+        'القطيع': 'nav_herd',
+        'أعلاف': 'nav_feed',
+        'GPS': 'nav_gps',
+        'اجهزة': 'nav_devices',
+        'السلالة': 'nav_breeds',
+        'تقارير': 'nav_reports',
+        'إعدادات': 'nav_settings',
+        'العمال': 'work_team'
+    };
+    return map[id] || id;
   };
 
   return (
     <header className={`h-28 bg-gradient-to-b from-[#1D3C2B] via-[#1D3C2B]/80 to-transparent border-none shadow-none backdrop-blur-[2px] w-full transition-all duration-500 ${isGPS ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="max-w-full h-full px-4 lg:px-8 flex items-center justify-between relative">
         
-        {/* --- NOTIFICATIONS DROPDOWN --- */}
         {showNotifications && (
-            <div className="absolute top-20 left-8 w-80 bg-[#051810]/95 backdrop-blur-xl border border-white/20 rounded-[1.5rem] shadow-2xl z-[70] overflow-hidden animate-fade-in flex flex-col">
+            <div className={`absolute top-20 ${language === 'ar' ? 'left-8' : 'right-8'} w-80 bg-[#051810]/95 backdrop-blur-xl border border-white/20 rounded-[1.5rem] shadow-2xl z-[70] overflow-hidden animate-fade-in flex flex-col`}>
                 <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                    <h4 className="text-white text-sm font-black">التنبيهات الذكية</h4>
+                    <h4 className="text-white text-sm font-black">{t('smart_alerts')}</h4>
                     <button onClick={() => setShowNotifications(false)} className="text-white/50 hover:text-white"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
                 <div className="max-h-60 overflow-y-auto no-scrollbar p-2 flex flex-col gap-2">
                     {isLoadingAlerts ? (
                         <div className="flex flex-col items-center justify-center py-6 gap-2">
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            <p className="text-[10px] text-white/50">جاري تحليل البيانات...</p>
+                            <p className="text-xs text-white/50">{t('analyzing')}</p>
                         </div>
                     ) : notifications.length > 0 ? notifications.map(notif => (
                         <div 
@@ -165,51 +176,45 @@ export default function Header({ activePage, countryName }: HeaderProps) {
                             onTouchEnd={() => onTouchEnd(notif.id)}
                         >
                             <div className="flex justify-between items-start mb-1 pointer-events-none">
-                                <span className={`text-[10px] font-black ${notif.type === 'alert' ? 'text-red-400' : notif.type === 'warning' ? 'text-amber-400' : 'text-green-400'}`}>{notif.title}</span>
-                                <span className="text-[8px] text-white/30 font-bold">{notif.time}</span>
+                                <span className={`text-[11px] font-black ${notif.type === 'alert' ? 'text-red-400' : notif.type === 'warning' ? 'text-amber-400' : 'text-green-400'}`}>{notif.title}</span>
+                                <span className="text-[10px] text-white/30 font-bold">{notif.time}</span>
                             </div>
-                            <p className="text-[10px] text-white/80 font-bold pointer-events-none leading-relaxed">{notif.message}</p>
+                            <p className="text-[11px] text-white/80 font-bold pointer-events-none leading-relaxed">{notif.message}</p>
                         </div>
                     )) : (
-                        <div className="p-4 text-center text-[10px] text-white/40">لا توجد تنبيهات نشطة</div>
+                        <div className="p-4 text-center text-xs text-white/40">{t('no_alerts')}</div>
                     )}
                 </div>
                 <div className="p-3 border-t border-white/10 text-center">
-                    <button onClick={() => setNotifications([])} className="text-[9px] text-white/50 font-bold hover:text-white">مسح الكل</button>
+                    <button onClick={() => setNotifications([])} className="text-[10px] text-white/50 font-bold hover:text-white">{t('clear_all')}</button>
                 </div>
             </div>
         )}
 
-        {/* القسم الأيمن: الشعار + التاريخ (بديل الساعة) والعنوان */}
         <div className="flex items-center gap-3 lg:gap-6">
-          {/* شعار التطبيق */}
           <div className="relative group">
-            <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full group-hover:bg-white/40 transition-all duration-700 scale-150"></div>
+            <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150"></div>
             <img 
               src="https://i.ibb.co/Tx36fB5C/20251228-105841.png" 
               alt="Logo" 
-              className="w-16 h-16 lg:w-28 lg:h-28 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-transform duration-500 group-hover:scale-105"
+              className="w-16 h-16 lg:w-28 lg:h-28 object-contain relative z-10 animate-logo-cinematic"
             />
           </div>
 
           <div className="flex flex-col justify-center items-start">
-            {/* التاريخ (مكان الساعة سابقاً) - فرض سطر واحد */}
-            <div className="text-white font-bold text-lg lg:text-2xl tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] leading-none whitespace-nowrap">
+            <div className="text-white font-bold text-xl lg:text-3xl tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] leading-none whitespace-nowrap">
               {dateString}
             </div>
             <div className="flex items-center gap-2 mt-1 lg:mt-2">
               <div className="h-[2px] w-4 bg-white"></div>
-              <span className="text-[10px] font-black text-white uppercase tracking-[0.25em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
-                {activePage}
+              <span className="text-xs font-black text-white uppercase tracking-[0.25em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                {t(getPageKey(activePage))}
               </span>
             </div>
           </div>
         </div>
 
-        {/* القسم الأيسر: زر الجرس + معلومات الدولة (تحت الجرس) */}
         <div className="flex flex-col justify-center items-end gap-3">
-          
-          {/* زر الجرس (أعلى اسم الدولة) */}
           <button 
             onClick={toggleNotifications}
             className="relative w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center border border-white/10 transition-all active:scale-95 group"
@@ -220,26 +225,24 @@ export default function Header({ activePage, countryName }: HeaderProps) {
              {unreadCount > 0 && (
                  <span className="absolute top-0 right-0 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 text-[7px] text-white items-center justify-center font-bold">{unreadCount}</span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 text-[8px] text-white items-center justify-center font-bold">{unreadCount}</span>
                  </span>
              )}
           </button>
           
-          {/* شارة الدولة مع أيقونة GPS تحت الجرس */}
           <div className="flex items-center gap-2 lg:gap-3">
-             {/* Sync Indicator */}
-             <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-full border border-white/5" title={syncStatus === 'offline' ? 'وضع غير متصل' : syncStatus === 'syncing' ? 'جاري المزامنة...' : 'تمت المزامنة'}>
+             <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-full border border-white/5" title={syncStatus === 'offline' ? t('offline') : syncStatus === 'syncing' ? t('syncing') : t('synced')}>
                {getSyncIcon()}
-               <span className="text-[8px] font-bold text-white/50 uppercase tracking-wider hidden lg:block">
-                 {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING' : 'SYNCED'}
+               <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider hidden lg:block">
+                 {syncStatus === 'offline' ? t('offline') : syncStatus === 'syncing' ? t('syncing') : 'SYNCED'}
                </span>
              </div>
 
              <div className="h-[2px] w-3 bg-white/20"></div>
 
              <div className="flex items-center gap-1.5">
-               <span className="text-[10px] font-black text-white uppercase tracking-[0.1em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] whitespace-nowrap">
-                  {countryName}
+               <span className="text-xs font-black text-white uppercase tracking-[0.1em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] whitespace-nowrap">
+                  {t(countryName) !== countryName ? t(countryName) : countryName}
                </span>
                <svg className="w-3.5 h-3.5 text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]" fill="currentColor" viewBox="0 0 20 20">
                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />

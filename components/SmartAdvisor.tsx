@@ -39,8 +39,8 @@ export default function SmartAdvisor() {
                         <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-indigo-400 rounded-full animate-ping"></div>
                     </div>
                     <div className="text-right">
-                        <span className="text-xs font-black text-white block">المستشار الذكي</span>
-                        <span className="text-[9px] font-bold text-indigo-300 block">اضغط لتحليل حالة القطيع</span>
+                        <span className="text-sm font-black text-white block">المستشار الذكي</span>
+                        <span className="text-[11px] font-bold text-indigo-300 block">اضغط لتحليل حالة القطيع</span>
                     </div>
                 </div>
                 <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -56,17 +56,17 @@ export default function SmartAdvisor() {
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-8">
                     <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-xs font-black text-white animate-pulse">جاري تحليل البيانات...</p>
+                    <p className="text-sm font-black text-white animate-pulse">جاري تحليل البيانات...</p>
                 </div>
             ) : analysis ? (
                 <>
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h3 className="text-lg font-black text-white flex items-center gap-2">
+                            <h3 className="text-xl font-black text-white flex items-center gap-2">
                                 {analysis.status === 'critical' && <span className="text-red-500">⚠️</span>}
                                 تقرير الحالة
                             </h3>
-                            <p className="text-[10px] text-white/70 font-bold mt-1 leading-relaxed max-w-[90%]">
+                            <p className="text-[11px] text-white/70 font-bold mt-1 leading-relaxed max-w-[90%]">
                                 {analysis.summary}
                             </p>
                         </div>
@@ -79,10 +79,10 @@ export default function SmartAdvisor() {
                         {/* Alerts */}
                         {analysis.alerts && analysis.alerts.length > 0 && (
                             <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20">
-                                <h4 className="text-[9px] font-black text-red-400 uppercase tracking-wider mb-2">تنبيهات عاجلة</h4>
+                                <h4 className="text-[10px] font-black text-red-400 uppercase tracking-wider mb-2">تنبيهات عاجلة</h4>
                                 <ul className="list-disc list-inside space-y-1">
                                     {analysis.alerts.map((alert: string, i: number) => (
-                                        <li key={i} className="text-[10px] font-bold text-white/90">{alert}</li>
+                                        <li key={i} className="text-[11px] font-bold text-white/90">{alert}</li>
                                     ))}
                                 </ul>
                             </div>
@@ -92,10 +92,10 @@ export default function SmartAdvisor() {
                         <div className="grid grid-cols-1 gap-3">
                             {analysis.predictions && analysis.predictions.length > 0 && (
                                 <div className="bg-blue-500/10 rounded-xl p-3 border border-blue-500/20">
-                                    <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-wider mb-2">توقعات (7 أيام)</h4>
+                                    <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-wider mb-2">توقعات (7 أيام)</h4>
                                     <ul className="space-y-1">
                                         {analysis.predictions.map((pred: string, i: number) => (
-                                            <li key={i} className="text-[10px] font-bold text-white/80 flex items-center gap-2">
+                                            <li key={i} className="text-[11px] font-bold text-white/80 flex items-center gap-2">
                                                 <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
                                                 {pred}
                                             </li>
@@ -106,10 +106,10 @@ export default function SmartAdvisor() {
                             
                             {analysis.recommendations && analysis.recommendations.length > 0 && (
                                 <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20">
-                                    <h4 className="text-[9px] font-black text-green-400 uppercase tracking-wider mb-2">توصيات عملية</h4>
+                                    <h4 className="text-[10px] font-black text-green-400 uppercase tracking-wider mb-2">توصيات عملية</h4>
                                     <ul className="space-y-2">
                                         {analysis.recommendations.map((rec: string, i: number) => (
-                                            <li key={i} className="text-[10px] font-bold text-white flex gap-2">
+                                            <li key={i} className="text-[11px] font-bold text-white flex gap-2">
                                                 <span className="text-green-400">✓</span>
                                                 {rec}
                                             </li>

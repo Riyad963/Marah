@@ -7,12 +7,12 @@ const SOUND_POLICY = {
   country: "user_selected",
   region: "rural",
   severityRules: {
-    low: "silent",
-    medium: "silent", // Default silent for medium as per policy
+    low: "soft",
+    medium: "soft", 
     high: "loud",
     critical: "alarm"
   },
-  antiSpamMinutes: 20,
+  antiSpamMinutes: 5, // Reduced for better testing
   nightMode: {
     start: "21:00",
     end: "06:00",
@@ -23,7 +23,7 @@ const SOUND_POLICY = {
     networkAware: true,
     reduceSoundsOnLowBattery: true
   },
-  default: "silent"
+  default: "soft"
 };
 
 class SoundService {
@@ -37,7 +37,6 @@ class SoundService {
     return this.audioContext;
   }
 
-  // FIX: Use loadCached instead of load for synchronous settings access
   private isSoundEnabled(): boolean {
     const settings = storageService.loadCached('marah_app_settings', { soundEffects: true });
     return settings.soundEffects;
@@ -45,9 +44,7 @@ class SoundService {
 
   /**
    * Smart Alert Player based on AI Policy
-   * @param severity 'low' | 'medium' | 'high' | 'critical'
-   * @param category The source of alert (e.g., 'GPS', 'Health')
-   * @param activePage The page user is currently viewing
+   * Improved to distinguish between notification types and alarms.
    */
   public playSmartAlert(severity: string, category: string, activePage: string) {
     if (!this.isSoundEnabled()) return;
@@ -55,55 +52,37 @@ class SoundService {
     const now = Date.now();
     const policy = SOUND_POLICY;
     
-    // 1. Check User Context (Rule: Silence if user is on the same screen)
-    // Critical alerts bypass this check to ensure safety
+    // 1. Check User Context (Silence if user is on the same screen, unless critical)
     const isSameContext = (category === 'GPS' && activePage === 'GPS') || 
                           (category === 'Health' && activePage === 'القطيع');
     
-    if (isSameContext && severity !== 'critical') {
-        console.debug('[SoundPolicy] Silenced: User is on same screen.');
+    if (isSameContext && severity !== 'critical' && severity !== 'high') {
         return; 
     }
 
-    // 2. Check Night Mode (Time String Parsing HH:MM)
+    // 2. Check Night Mode
     const date = new Date();
     const currentMins = date.getHours() * 60 + date.getMinutes();
-    
     const [sH, sM] = policy.nightMode.start.split(':').map(Number);
     const [eH, eM] = policy.nightMode.end.split(':').map(Number);
     const startMins = sH * 60 + sM;
     const endMins = eH * 60 + eM;
 
-    let isNight = false;
-    if (startMins > endMins) {
-        // Spans midnight (e.g. 21:00 to 06:00)
-        isNight = currentMins >= startMins || currentMins < endMins;
-    } else {
-        isNight = currentMins >= startMins && currentMins < endMins;
-    }
+    let isNight = (startMins > endMins) 
+        ? (currentMins >= startMins || currentMins < endMins)
+        : (currentMins >= startMins && currentMins < endMins);
     
-    if (isNight) {
-        if (severity !== 'critical' || !policy.nightMode.allowCriticalOnly) {
-            console.debug('[SoundPolicy] Silenced: Night Mode Active.');
-            return;
-        }
-    }
+    if (isNight && severity !== 'critical') return;
 
-    // 3. Anti-Spam (Rule: No sound if repeated within defined minutes)
+    // 3. Anti-Spam
     const lastPlayed = this.lastPlayedMap[category] || 0;
     const minutesSinceLast = (now - lastPlayed) / 60000;
-    
-    if (minutesSinceLast < policy.antiSpamMinutes && severity !== 'critical') {
-        console.debug('[SoundPolicy] Silenced: Anti-Spam cooldown.');
-        return;
-    }
+    if (minutesSinceLast < policy.antiSpamMinutes && severity !== 'critical') return;
 
-    // 4. Execute Sound based on Severity
+    // 4. Execute Sound
     const soundType = (policy.severityRules as any)[severity] || policy.default;
 
     switch (soundType) {
-        case 'silent':
-            return;
         case 'soft':
             this.playSoftNotification();
             break;
@@ -115,24 +94,63 @@ class SoundService {
             break;
     }
 
-    // Update Last Played
     this.lastPlayedMap[category] = now;
   }
 
-  // --- Sound Generators ---
+  // --- Specialized Sound Generators ---
 
+  /**
+   * Soft Chime: For low priority info.
+   * A clean, bright high-pitched ding.
+   */
   private playSoftNotification() {
-    this.playSound(440, 'sine', 0.1, 0.15); // A4, soft, short
+    const ctx = this.getContext();
+    const now = ctx.currentTime;
+    this.scheduleTone(now, 880, 'sine', 0.2, 0.1); 
+    this.scheduleTone(now + 0.1, 1320, 'sine', 0.1, 0.05);
   }
 
+  /**
+   * Loud Notification: For high priority info (e.g., Sick Animal, Feed Empty).
+   * A dual-tone professional chime.
+   */
   private playLoudNotification() {
-    // Two beeps
     const ctx = this.getContext();
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
     
-    this.scheduleTone(now, 600, 'square', 0.1, 0.1);
-    this.scheduleTone(now + 0.15, 600, 'square', 0.1, 0.1);
+    // Major third chime
+    this.scheduleTone(now, 523.25, 'triangle', 0.2, 0.15); // C5
+    this.scheduleTone(now + 0.15, 659.25, 'triangle', 0.3, 0.15); // E5
+  }
+
+  /**
+   * Emergency Alarm: For fence exit (Critical).
+   * A high-intensity pulsing siren.
+   */
+  public playAlarm() {
+    if (!this.isSoundEnabled()) return;
+    const ctx = this.getContext();
+    if (ctx.state === 'suspended') ctx.resume();
+    
+    // Pulse 3 times for urgency
+    for (let i = 0; i < 3; i++) {
+        const now = ctx.currentTime + (i * 0.4);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+        
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    }
   }
 
   private scheduleTone(time: number, freq: number, type: OscillatorType, duration: number, vol: number) {
@@ -144,7 +162,7 @@ class SoundService {
     osc.frequency.setValueAtTime(freq, time);
     
     gain.gain.setValueAtTime(vol, time);
-    gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
     
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -159,10 +177,8 @@ class SoundService {
     this.scheduleTone(ctx.currentTime, freq, type, duration, vol);
   }
 
-  // --- Existing Methods (Kept for compatibility) ---
-
   public playClick() {
-    this.playSound(800, 'sine', 0.1, 0.05);
+    this.playSound(900, 'sine', 0.08, 0.03);
   }
 
   public playSuccess() {
@@ -170,37 +186,16 @@ class SoundService {
     const ctx = this.getContext();
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
-    // Arpeggio
-    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-        this.scheduleTone(now + (i * 0.08), freq, 'triangle', 0.3, 0.1);
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+        this.scheduleTone(now + (i * 0.06), freq, 'sine', 0.2, 0.08);
     });
   }
 
   public playError() {
-    this.playSound(150, 'sawtooth', 0.3, 0.1);
-  }
-
-  public playAlarm() {
-    if (!this.isSoundEnabled()) return;
     const ctx = this.getContext();
-    if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
-    
-    // Siren effect
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(880, now);
-    osc.frequency.linearRampToValueAtTime(1760, now + 0.5);
-    osc.frequency.linearRampToValueAtTime(880, now + 1.0);
-    
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0, now + 1.0);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 1.0);
+    this.scheduleTone(now, 220, 'sawtooth', 0.2, 0.1);
+    this.scheduleTone(now + 0.1, 110, 'sawtooth', 0.2, 0.1);
   }
 }
 

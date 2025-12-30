@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="مراح">
     
     <link rel="apple-touch-icon" href="https://i.ibb.co/Tx36fB5C/20251228-105841.png">
-    <link rel="manifest" href="./public/manifest.json">
+    <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,6 +48,26 @@
         .animate-fade-in {
             animation: fade-in 0.5s ease forwards;
         }
+
+        /* Cinematic Logo Animation Global */
+        @keyframes logo-cinematic {
+            0% { 
+                transform: scale(1) translateY(0);
+                filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)) brightness(1);
+            }
+            50% { 
+                transform: scale(1.05) translateY(-5px);
+                filter: drop-shadow(0 0 25px rgba(255,255,255,0.4)) brightness(1.2);
+            }
+            100% { 
+                transform: scale(1) translateY(0);
+                filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)) brightness(1);
+            }
+        }
+        .animate-logo-cinematic {
+            animation: logo-cinematic 4s ease-in-out infinite;
+        }
+
         .leaflet-control-zoom { display: none !important; }
         .leaflet-container { background: #051810 !important; }
         
@@ -94,7 +114,9 @@
     "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
     "firebase/messaging": "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://esm.sh/vite@^7.3.0"
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@capacitor/status-bar": "https://esm.sh/@capacitor/status-bar@^8.0.0",
+    "@capacitor/app": "https://esm.sh/@capacitor/app@^8.0.0"
   }
 }
 </script>

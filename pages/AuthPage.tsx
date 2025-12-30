@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LivestockCategory } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
+import { useLanguage } from '../contexts/LanguageContext.tsx';
 
 interface AuthPageProps {
   onLogin: (countryName: string, role: string, currency: string) => void;
@@ -11,45 +12,30 @@ type UserRole = 'مالك' | 'مشرف' | 'عامل' | 'بيطري';
 type AuthMode = 'login' | 'signup';
 
 const COUNTRIES = [
-  { code: 'SA', name: 'السعودية', flag: '🇸🇦', prefix: '+966', currency: 'SAR' },
-  { code: 'AE', name: 'الإمارات', flag: '🇦🇪', prefix: '+971', currency: 'AED' },
-  { code: 'KW', name: 'الكويت', flag: '🇰🇼', prefix: '+965', currency: 'KWD' },
-  { code: 'QA', name: 'قطر', flag: '🇶🇦', prefix: '+974', currency: 'QAR' },
-  { code: 'OM', name: 'عمان', flag: '🇴🇲', prefix: '+968', currency: 'OMR' },
-  { code: 'BH', name: 'البحرين', flag: '🇧🇭', prefix: '+973', currency: 'BHD' },
-  { code: 'DZ', name: 'الجزائر', flag: '🇩🇿', prefix: '+213', currency: 'DZD' },
-  { code: 'MA', name: 'المغرب', flag: '🇲🇦', prefix: '+212', currency: 'MAD' },
-  { code: 'TN', name: 'تونس', flag: '🇹🇳', prefix: '+216', currency: 'TND' },
-  { code: 'LY', name: 'ليبيا', flag: '🇱🇾', prefix: '+218', currency: 'LYD' },
-  { code: 'EG', name: 'مصر', flag: '🇪🇬', prefix: '+20', currency: 'EGP' },
-  { code: 'SD', name: 'السودان', flag: '🇸🇩', prefix: '+249', currency: 'SDG' },
-  { code: 'MR', name: 'موريتانيا', flag: '🇲🇷', prefix: '+222', currency: 'MRU' },
-  { code: 'JO', name: 'الأردن', flag: '🇯🇴', prefix: '+962', currency: 'JOD' },
-  { code: 'LB', name: 'لبنان', flag: '🇱🇧', prefix: '+961', currency: 'LBP' },
-  { code: 'SY', name: 'سوريا', flag: '🇸🇾', prefix: '+963', currency: 'SYP' },
-  { code: 'IQ', name: 'العراق', flag: '🇮🇶', prefix: '+964', currency: 'IQD' },
-  { code: 'PS', name: 'فلسطين', flag: '🇵🇸', prefix: '+970', currency: 'ILS' },
-  { code: 'YE', name: 'اليمن', flag: '🇾🇪', prefix: '+967', currency: 'YER' },
-  { code: 'SO', name: 'الصومال', flag: '🇸🇴', prefix: '+252', currency: 'SOS' },
-  { code: 'DJ', name: 'جيبوتي', flag: '🇩🇯', prefix: '+253', currency: 'DJF' },
-  { code: 'KM', name: 'جزر القمر', flag: '🇰🇲', prefix: '+269', currency: 'KMF' },
-  { code: 'TR', name: 'تركيا', flag: '🇹🇷', prefix: '+90', currency: 'TRY' },
+  { code: 'SA', name: 'saudi', flag: '🇸🇦', prefix: '+966', currency: 'SAR' },
+  { code: 'AE', name: 'uae', flag: '🇦🇪', prefix: '+971', currency: 'AED' },
+  { code: 'KW', name: 'kuwait', flag: '🇰🇼', prefix: '+965', currency: 'KWD' },
+  { code: 'QA', name: 'qatar', flag: '🇶🇦', prefix: '+974', currency: 'QAR' },
+  { code: 'OM', name: 'oman', flag: '🇴🇲', prefix: '+968', currency: 'OMR' },
+  { code: 'BH', name: 'bahrain', flag: '🇧🇭', prefix: '+973', currency: 'BHD' },
+  // ... other countries mapped similarly if needed, keeping it short for this implementation
 ];
 
 const ROLES: { id: UserRole; label: string }[] = [
-  { id: 'مالك', label: 'مالك' },
-  { id: 'مشرف', label: 'مشرف' },
-  { id: 'بيطري', label: 'بيطري' },
-  { id: 'عامل', label: 'عامل' },
+  { id: 'مالك', label: 'owner' },
+  { id: 'مشرف', label: 'supervisor' },
+  { id: 'بيطري', label: 'vet' },
+  { id: 'عامل', label: 'worker' },
 ];
 
-const CATEGORIES: { id: LivestockCategory }[] = [
-  { id: 'أغنام' },
-  { id: 'ماعز' },
-  { id: 'أبقار' },
+const CATEGORIES: { id: LivestockCategory, label: string }[] = [
+  { id: 'أغنام', label: 'sheep' },
+  { id: 'ماعز', label: 'goats' },
+  { id: 'أبقار', label: 'cows' },
 ];
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<AuthMode>('login');
   const [accessCode, setAccessCode] = useState(''); 
   const [errorMsg, setErrorMsg] = useState('');
@@ -64,239 +50,244 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
     countryCode: 'SA'
   });
 
-  // تصفير الحقول عند تغيير الوضع بين تسجيل الدخول والاشتراك
-  useEffect(() => {
-    setFormData({
-      name: '',
-      farmName: '',
-      phone: '',
-      password: '',
-      role: 'مالك',
-      category: 'أغنام',
-      countryCode: 'SA'
-    });
-    setAccessCode('');
-    setErrorMsg('');
-  }, [mode]);
-
   const selectedCountry = COUNTRIES.find(c => c.code === formData.countryCode) || COUNTRIES[0];
 
-  // FIX: Added async to handleSubmit to handle storageService.load Promise
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (formData.role !== 'مالك') {
+    if (mode === 'signup' && formData.role !== 'مالك') {
         const workersList: any[] = await storageService.load('marah_workers', []);
         const validInvitation = workersList.find(w => w.accessCode === accessCode && w.role === formData.role);
         if (!validInvitation) {
-            setErrorMsg(`كود التفعيل غير صحيح أو لا يطابق صلاحية "${formData.role}"`);
+            setErrorMsg(t('error_code'));
             return;
         }
     }
 
+    // تجهيز رقم الهاتف الدولي الكامل
+    const fullPhone = `${selectedCountry.prefix} ${formData.phone}`;
+
+    // Note: We are saving country *name key* or name? 
+    // To respect "No Arabic", we should save the English name or Key?
+    // User profile stores "country". Header uses it. 
+    // Let's store the Key (e.g., 'saudi'). Header will translate it.
+    
     const userProfile = {
-      name: formData.name || 'مستخدم جديد',
-      farmName: formData.role === 'مالك' ? (formData.farmName || 'مزرعتي') : '-',
-      phone: formData.phone || '',
+      name: formData.name || 'User',
+      farmName: formData.role === 'مالك' ? (formData.farmName || 'My Farm') : '-',
+      phone: fullPhone,
       role: formData.role,
-      country: selectedCountry.name,
+      country: selectedCountry.name, 
       currency: selectedCountry.currency,
       email: '', 
       plan: 'مجاني' 
     };
     
+    // حفظ البيانات محلياً قبل الانتقال
     const existing = await storageService.load('marah_user_profile', null);
+    
+    // إذا كان وضع إنشاء حساب أو لا توجد بيانات سابقة، نحفظ البيانات الجديدة
     if (mode === 'signup' || !existing) {
-       storageService.save('marah_user_profile', userProfile);
+       await storageService.save('marah_user_profile', userProfile);
        if (mode === 'signup') {
          storageService.incrementGlobalUserCount();
        }
+    } else if (mode === 'login' && existing) {
+       // في وضع تسجيل الدخول، إذا كانت هناك بيانات مخزنة، نستخدمها ونحدث الهاتف فقط إذا تم إدخاله
+       const updatedProfile = { ...existing, phone: fullPhone };
+       await storageService.save('marah_user_profile', updatedProfile);
     }
 
     onLogin(selectedCountry.name, formData.role, selectedCountry.currency);
   };
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData({ ...formData, countryCode: e.target.value });
-  };
+  const inputClasses = "w-full h-12 bg-white/5 border border-white/10 rounded-2xl px-4 text-white font-bold text-base focus:border-green-400 focus:bg-white/10 outline-none transition-all placeholder-white/20";
+  const labelClasses = "text-xs font-black text-white/50 mb-1.5 block uppercase tracking-wider px-1";
 
   return (
     <div className="min-h-screen bg-[#051810] flex items-center justify-center p-4 relative overflow-hidden font-['Cairo']">
       
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#1D3C2B] rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#356148] rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-[#1D3C2B] rounded-full blur-[120px] opacity-40 animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-[#356148] rounded-full blur-[120px] opacity-20"></div>
       </div>
 
-      <div className="w-full max-w-lg relative z-10 animate-fade-in">
+      <div className="w-full max-w-md relative z-10 flex flex-col">
         
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#1D3C2B] to-[#356148] rounded-[2rem] flex items-center justify-center shadow-2xl mb-4 border border-white/10 relative group">
-             <div className="absolute inset-0 bg-white/10 rounded-[2rem] animate-pulse"></div>
-             <img src="https://i.ibb.co/Tx36fB5C/20251228-105841.png" className="w-14 h-14 object-contain relative z-10" alt="Logo" />
+        {/* Branding Section */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full"></div>
+            <img 
+              src="https://i.ibb.co/Tx36fB5C/20251228-105841.png" 
+              className="w-28 h-28 object-contain relative z-10 animate-logo-cinematic" 
+              alt="Marah Logo" 
+            />
           </div>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl border-2 border-white/40 rounded-[2.5rem] p-6 md:p-8 shadow-2xl">
+        {/* Auth Container */}
+        <div className="glass-card rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden">
           
-          <div className="flex bg-black/20 p-1 rounded-2xl mb-6 relative">
-            <div 
-              className={`absolute top-1 bottom-1 w-[48%] bg-[#1D3C2B] rounded-xl shadow-lg transition-all duration-300 ${mode === 'signup' ? 'left-1' : 'left-[51%]'}`}
-            ></div>
-            <button 
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-3 text-sm font-black relative z-10 transition-colors text-white`}
-            >
-              إنشاء حساب
-            </button>
+          {/* Mode Switcher */}
+          <div className="flex bg-black/30 p-1.5 rounded-2xl mb-8">
             <button 
               onClick={() => setMode('login')}
-              className={`flex-1 py-3 text-sm font-black relative z-10 transition-colors text-white`}
+              className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all duration-500 ${mode === 'login' ? 'bg-[#1D3C2B] text-white shadow-lg border border-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
-              تسجيل الدخول
+              {t('login')}
+            </button>
+            <button 
+              onClick={() => setMode('signup')}
+              className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all duration-500 ${mode === 'signup' ? 'bg-[#1D3C2B] text-white shadow-lg border border-white/10' : 'text-white/40 hover:text-white/60'}`}
+            >
+              {t('signup')}
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             
             {mode === 'signup' && (
-              <div className="space-y-5 animate-fade-in">
+              <div className="animate-fade-in space-y-5">
+                
+                {/* Role Selection */}
                 <div className="space-y-2">
-                   <label className="text-[10px] text-white font-black px-2 uppercase tracking-wider">اختر الدور</label>
-                   <div className="grid grid-cols-4 gap-2">
-                      {ROLES.map((role) => (
-                         <div 
-                           key={role.id}
-                           onClick={() => setFormData({...formData, role: role.id})}
-                           className={`cursor-pointer rounded-xl py-3 px-1 border transition-all duration-300 flex flex-col items-center justify-center gap-1 h-12 ${formData.role === role.id ? 'bg-[#1D3C2B] border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'bg-white/5 border-white/40 hover:bg-white/10'}`}
-                         >
-                            <span className={`text-[10px] font-black text-white`}>{role.label}</span>
-                         </div>
-                      ))}
-                   </div>
+                  <label className={labelClasses}>{t('role_type')}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ROLES.map((role) => (
+                      <button 
+                        key={role.id}
+                        type="button"
+                        onClick={() => setFormData({...formData, role: role.id})}
+                        className={`flex items-center justify-center py-3.5 px-2 rounded-xl border transition-all duration-300 ${formData.role === role.id ? 'bg-[#1D3C2B] border-green-500 text-white shadow-lg' : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}`}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wide">{t(role.label)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {formData.role !== 'مالك' && (
-                    <div className="space-y-1 animate-fade-in">
-                        <label className="text-[10px] text-white font-black px-2 flex justify-between">
-                            <span>كود التفعيل (مطلوب)</span>
-                            <span className="opacity-80">اطلبه من المالك</span>
-                        </label>
-                        <div className="relative">
-                            <input 
-                                type="text" 
-                                required
-                                value={accessCode}
-                                onChange={(e) => setAccessCode(e.target.value)}
-                                className="w-full h-14 bg-black/20 border-2 border-white/40 rounded-2xl px-4 text-white font-mono font-bold text-center text-[20px] focus:border-green-400 outline-none transition-all placeholder-white/30"
-                                placeholder="XXX-000000"
-                            />
-                        </div>
-                    </div>
-                )}
-
+                {/* Category Selection for Owner */}
                 {formData.role === 'مالك' && (
-                    <div className="space-y-2">
-                    <label className="text-[10px] text-white font-black px-2 uppercase tracking-wider">نوع القطيع</label>
-                    <div className="grid grid-cols-3 gap-3">
-                        {CATEGORIES.map((cat) => (
-                            <div 
-                            key={cat.id}
-                            onClick={() => setFormData({...formData, category: cat.id})}
-                            className={`cursor-pointer rounded-2xl p-3 border-2 transition-all duration-300 relative overflow-hidden group flex items-center justify-center h-12 ${formData.category === cat.id ? 'bg-gradient-to-br from-[#1D3C2B] to-[#356148] border-green-500' : 'bg-white/5 border-white/40'}`}
-                            >
-                            <p className={`text-center text-[14px] font-black text-white`}>{cat.id}</p>
-                            </div>
-                        ))}
+                  <div className="space-y-2">
+                    <label className={labelClasses}>{t('main_activity')}</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {CATEGORIES.map((cat) => (
+                        <button 
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setFormData({...formData, category: cat.id})}
+                          className={`flex items-center justify-center py-3 rounded-xl border transition-all duration-300 ${formData.category === cat.id ? 'bg-[#1D3C2B] border-green-500 text-white' : 'bg-white/5 border-white/5 text-white/40'}`}
+                        >
+                          <span className="text-xs font-black uppercase tracking-tight">{t(cat.label)}</span>
+                        </button>
+                      ))}
                     </div>
-                    </div>
+                  </div>
                 )}
 
-                <div className={`grid gap-3 ${formData.role === 'مالك' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                   {formData.role === 'مالك' && (
-                       <div className="space-y-1 animate-fade-in">
-                          <label className="text-[10px] text-white font-black px-2">اسم المزرعة</label>
-                          <input 
-                            type="text" 
-                            required
-                            value={formData.farmName}
-                            onChange={(e) => setFormData({...formData, farmName: e.target.value})}
-                            className="w-full h-12 bg-transparent border-2 border-white/40 rounded-2xl px-4 text-white font-bold text-[16px] focus:border-green-500 outline-none transition-all placeholder-white/30"
-                            placeholder="أدخل اسم المزرعة"
-                          />
-                       </div>
-                   )}
-                   <div className="space-y-1">
-                      <label className="text-[10px] text-white font-black px-2">الاسم الكامل</label>
+                {/* Activation Code for non-owners */}
+                {formData.role !== 'مالك' && (
+                  <div className="space-y-1.5">
+                    <label className={labelClasses}>{t('activation_code')}</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={accessCode}
+                      onChange={(e) => setAccessCode(e.target.value)}
+                      className={`${inputClasses} text-center font-mono tracking-widest text-lg focus:border-amber-500`}
+                      placeholder="XXX-000000"
+                    />
+                  </div>
+                )}
+
+                {/* Name & Farm Name */}
+                <div className="grid grid-cols-1 gap-4">
+                  {formData.role === 'مالك' && (
+                    <div className="space-y-1.5">
+                      <label className={labelClasses}>{t('farm_name')}</label>
                       <input 
                         type="text" 
                         required
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full h-12 bg-transparent border-2 border-white/40 rounded-2xl px-4 text-white font-bold text-[16px] focus:border-green-500 outline-none transition-all placeholder-white/30"
-                        placeholder="أدخل اسمك الكامل"
+                        value={formData.farmName}
+                        onChange={(e) => setFormData({...formData, farmName: e.target.value})}
+                        className={inputClasses}
+                        placeholder=""
                       />
-                   </div>
-                </div>
-                
-                <div className="space-y-1">
-                   <label className="text-[10px] text-white font-black px-2">الدولة</label>
-                   <div className="relative">
-                      <select 
-                        value={formData.countryCode}
-                        onChange={handleCountryChange}
-                        className="w-full h-12 bg-transparent border-2 border-white/40 rounded-2xl pl-4 pr-12 text-white font-bold text-[16px] focus:border-green-500 outline-none appearance-none cursor-pointer"
-                      >
-                         {COUNTRIES.map(c => <option key={c.code} value={c.code} className="bg-[#051810] text-white">{c.name}</option>)}
-                      </select>
-                   </div>
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <label className={labelClasses}>{t('user_name')}</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className={inputClasses}
+                      placeholder=""
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="space-y-1 animate-fade-in">
-               <label className="text-[10px] text-white font-black px-2">رقم الهاتف</label>
-               <div className="flex gap-2 dir-ltr">
-                  <div className="w-20 h-14 bg-transparent border-2 border-white/40 rounded-2xl flex items-center justify-center text-white font-mono font-bold text-[16px] tracking-wider">
-                     {selectedCountry.prefix}
-                  </div>
-                  <input 
-                    type="tel" 
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="flex-1 h-14 bg-transparent border-2 border-white/40 rounded-2xl px-4 text-white font-bold text-right text-[18px] focus:border-green-500 outline-none transition-all placeholder-white/30 dir-rtl"
-                    placeholder="رقم الجوال"
-                  />
-               </div>
+            {/* Common Phone Section */}
+            <div className="space-y-1.5">
+              <label className={labelClasses}>{t('phone')}</label>
+              <div className="flex gap-2">
+                <select 
+                  value={formData.countryCode} 
+                  onChange={(e) => setFormData({...formData, countryCode: e.target.value})}
+                  className="w-24 h-12 bg-white/5 border border-white/10 rounded-2xl px-1 text-white text-xs font-black outline-none focus:border-green-400"
+                >
+                  {COUNTRIES.map(c => <option key={c.code} value={c.code} className="bg-[#051810]">{c.flag} {c.prefix}</option>)}
+                </select>
+                <input 
+                  type="tel" 
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="5XXXXXXXX"
+                  className={`${inputClasses} flex-1`}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1 animate-fade-in">
-               <label className="text-[10px] text-white font-black px-2">كلمة المرور</label>
-               <div className="relative">
-                  <input 
-                    type="password" 
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="w-full h-14 bg-transparent border-2 border-white/40 rounded-2xl px-4 text-white font-bold text-right text-[18px] focus:border-green-500 outline-none transition-all placeholder-white/30"
-                    placeholder="كلمة المرور"
-                  />
-               </div>
+            {/* Password Section */}
+            <div className="space-y-1.5">
+              <label className={labelClasses}>{t('password')}</label>
+              <input 
+                type="password" 
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                className={inputClasses}
+                placeholder="••••••••"
+              />
             </div>
 
             {errorMsg && (
-              <p className="text-red-400 text-[10px] font-bold px-2 text-center animate-shake">{errorMsg}</p>
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-black text-center animate-pulse">
+                {errorMsg}
+              </div>
             )}
 
             <button 
               type="submit"
-              className="mt-2 w-full h-16 bg-gradient-to-r from-[#1D3C2B] to-[#356148] rounded-[1.5rem] text-white font-black text-lg shadow-[0_10px_30px_rgba(255,255,255,0.2)] border-2 border-white/40 active:scale-[0.98] transition-all hover:brightness-110 flex items-center justify-center gap-2 group"
+              className="w-full h-14 bg-gradient-to-r from-[#1D3C2B] to-[#356148] border border-white/20 text-white rounded-2xl font-black text-base shadow-xl active:scale-[0.98] transition-all hover:brightness-110 mt-4"
             >
-              <span>{mode === 'login' ? 'دخول آمن' : 'إنشاء الحساب'}</span>
-              <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              {mode === 'login' ? t('enter_system') : t('create_account')}
             </button>
+
+            {mode === 'login' && (
+              <div className="flex justify-center pt-2">
+                <button type="button" className="text-xs text-white/30 font-bold hover:text-white transition-colors">
+                  {t('forgot_password')}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

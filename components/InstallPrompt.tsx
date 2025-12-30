@@ -45,19 +45,19 @@ export default function InstallPrompt() {
           <img src="https://i.ibb.co/Tx36fB5C/20251228-105841.png" className="w-10 h-10 object-contain" alt="Logo" />
         </div>
         <div className="flex-1">
-          <h4 className="text-white text-sm font-black">ثبت تطبيق "مراح"</h4>
-          <p className="text-white/60 text-[9px] font-bold">للوصول السريع وتتبع القطيع بدون إنترنت</p>
+          <h4 className="text-white text-base font-black">ثبت تطبيق "مراح"</h4>
+          <p className="text-white/60 text-[10px] font-bold">للوصول السريع وتتبع القطيع بدون إنترنت</p>
         </div>
         <div className="flex flex-col gap-2">
            <button 
              onClick={handleInstall}
-             className="bg-white text-[#1D3C2B] px-4 py-2 rounded-xl text-[10px] font-black shadow-lg active:scale-95 transition-transform"
+             className="bg-white text-[#1D3C2B] px-4 py-2 rounded-xl text-xs font-black shadow-lg active:scale-95 transition-transform"
            >
              تثبيت الآن
            </button>
            <button 
              onClick={() => setShowPrompt(false)}
-             className="text-white/40 text-[8px] font-bold hover:text-white"
+             className="text-white/40 text-[10px] font-bold hover:text-white"
            >
              ليس الآن
            </button>

@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { LivestockCategory } from '../types.ts';
 import { storageService } from '../services/storageService.ts';
 import { soundService } from '../services/soundService.ts';
+import { useLanguage } from '../contexts/LanguageContext.tsx';
 
 interface Fence {
   id: string;
@@ -25,6 +26,7 @@ const INITIAL_CENTER: [number, number] = [34.759297, 3.588139];
 const APP_LOGO_URL = "https://i.ibb.co/Tx36fB5C/20251228-105841.png";
 
 const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCategory }> = ({ isDarkMode, selectedCategory }) => {
+  const { t } = useLanguage();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const livestockMarkerRef = useRef<L.Marker | null>(null);
@@ -87,7 +89,7 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
       if (f.type === 'circle') {
         layer = L.circle(f.center, {
           radius: f.radius,
-          color: isSelected ? '#f97316' : '#1D3C2B',
+          color: isSelected ? '#00ff00' : '#1D3C2B',
           fillColor: '#1D3C2B',
           fillOpacity: 0.2,
           weight: isSelected ? 4 : 2,
@@ -95,7 +97,7 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
       } else {
         const coords = getRotatedRectCoordinates(f.center, f.width, f.height, f.rotation);
         layer = L.polygon(coords, {
-          color: isSelected ? '#f97316' : '#1D3C2B',
+          color: isSelected ? '#00ff00' : '#1D3C2B',
           fillColor: '#1D3C2B',
           fillOpacity: 0.2,
           weight: isSelected ? 4 : 2,
@@ -117,7 +119,7 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
           draggable: true,
           icon: L.divIcon({
             className: 'fence-move-pin',
-            html: `<div style="background:${isSelected ? '#f97316' : '#ffffff'}; width:24px; height:24px; border-radius:50%; border:3px solid #1D3C2B; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(0,0,0,0.3);"><svg style="width:14px; height:14px; color:${isSelected ? '#fff' : '#1D3C2B'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7l4-4m0 0l4 4m-4-4v18m0 0l-4-4m4 4l4-4"/></svg></div>`,
+            html: `<div style="background:${isSelected ? '#00ff00' : '#ffffff'}; width:24px; height:24px; border-radius:50%; border:3px solid #1D3C2B; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(0,0,0,0.3);"><svg style="width:14px; height:14px; color:${isSelected ? '#000' : '#1D3C2B'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7l4-4m0 0l4 4m-4-4v18m0 0l-4-4m4 4l4-4"/></svg></div>`,
             iconSize: [24, 24],
             iconAnchor: [12, 12]
           })
@@ -216,10 +218,10 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
   }, []);
 
   const navTools = [
-    { id: 'recenter', icon: <path d="M12 8v4m0 0v4m0-4h4m-4 0H8" strokeWidth="2" strokeLinecap="round" />, action: () => mapRef.current?.flyTo([livestockPos.lat, livestockPos.lng], 16), label: 'تمركز' },
-    { id: 'layer', icon: <path d="M9 20l-5.447-2.724A2 2 0 013 15.483V8.517a2 2 0 011.553-1.943L9 5m6 15l5.447-2.724A2 2 0 0121 15.483V8.517a2 2 0 01-1.553-1.943L15 5" strokeWidth="2" strokeLinecap="round" />, action: () => setActiveLayer(l => l === 'satellite' ? 'street' : 'satellite'), label: 'خريطة', active: activeLayer === 'street' },
-    { id: 'fence', icon: <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeWidth="2" strokeLinecap="round" />, action: () => { soundService.playClick(); setIsEditMode(!isEditMode); setSelectedFenceId(null); }, label: 'سياج', active: isEditMode },
-    { id: 'simulation', icon: <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" strokeWidth="2" />, action: () => setIsSimulation(!isSimulation), label: 'محاكاة', active: isSimulation },
+    { id: 'recenter', icon: <path d="M12 8v4m0 0v4m0-4h4m-4 0H8" strokeWidth="2" strokeLinecap="round" />, action: () => mapRef.current?.flyTo([livestockPos.lat, livestockPos.lng], 16), label: t('recenter') },
+    { id: 'layer', icon: <path d="M9 20l-5.447-2.724A2 2 0 013 15.483V8.517a2 2 0 011.553-1.943L9 5m6 15l5.447-2.724A2 2 0 0121 15.483V8.517a2 2 0 01-1.553-1.943L15 5" strokeWidth="2" strokeLinecap="round" />, action: () => setActiveLayer(l => l === 'satellite' ? 'street' : 'satellite'), label: t('map_layer'), active: activeLayer === 'street' },
+    { id: 'fence', icon: <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeWidth="2" strokeLinecap="round" />, action: () => { soundService.playClick(); setIsEditMode(!isEditMode); setSelectedFenceId(null); }, label: t('fence'), active: isEditMode },
+    { id: 'simulation', icon: <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" strokeWidth="2" />, action: () => setIsSimulation(!isSimulation), label: t('simulation'), active: isSimulation },
   ];
 
   const selectedFence = fences.find(f => f.id === selectedFenceId);
@@ -237,59 +239,58 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
       <div ref={mapContainerRef} className="absolute inset-0 z-0 h-full w-full" />
       
       {isEditMode && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 bg-orange-500 text-white px-6 py-2 rounded-full font-black text-[10px] animate-pulse shadow-xl border border-white/40">
-          وضع تحريك السياج: اسحب الدوائر البيضاء لتغيير الموقع
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 bg-[#00ff00] text-black px-6 py-2 rounded-full font-black text-xs animate-pulse shadow-xl border border-white/40">
+          {t('fence_move_mode')}
         </div>
       )}
 
       <div className="absolute top-6 inset-x-0 flex justify-center z-10 px-8 pointer-events-none">
         <div className={`backdrop-blur-xl rounded-[2rem] px-8 py-3 flex items-center gap-8 shadow-2xl pointer-events-auto border border-white/10 ${systemMode === 'ALERT' ? 'bg-red-600' : 'bg-[#1D3C2B]/90'}`}>
           <div className="text-center min-w-[80px]">
-            <p className="text-[7px] text-white/40 font-black uppercase tracking-widest">النظام الذكي</p>
-            <p className="text-[11px] font-black text-white">{systemMode}</p>
+            <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">{t('smart_system')}</p>
+            <p className="text-xs font-black text-white">{t('mode_' + systemMode.toLowerCase()) || systemMode}</p>
           </div>
           <div className="text-center">
-            <p className="text-[7px] text-white/40 font-black uppercase tracking-widest">السرعة</p>
-            <p className="text-[11px] font-black text-white">{livestockPos.speed.toFixed(1)} ك/س</p>
+            <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Speed</p>
+            <p className="text-xs font-black text-white">{livestockPos.speed.toFixed(1)} km/h</p>
           </div>
         </div>
       </div>
 
-      <div className="fixed left-4 lg:left-8 bottom-6 z-50 flex flex-col items-center gap-4 pointer-events-none">
+      <div className={`fixed ${useLanguage().language === 'ar' ? 'left-4 lg:left-8' : 'right-4 lg:right-8'} bottom-6 z-50 flex flex-col items-center gap-4 pointer-events-none`}>
         <aside className="flex flex-col items-center gap-3 transition-all duration-700">
            {navTools.map((tool, index) => (
-             <button key={tool.id} onClick={tool.action} style={{ transitionDelay: isLeftNavOpen ? `${(navTools.length-1-index)*50}ms` : '0ms', transform: isLeftNavOpen ? 'translateY(0)' : `translateY(${(navTools.length-index)*40}px)`, opacity: isLeftNavOpen ? 1 : 0, pointerEvents: isLeftNavOpen ? 'auto' : 'none' }} className={`w-14 h-14 lg:w-16 lg:h-16 flex flex-col items-center justify-center rounded-full transition-all duration-500 border shadow-lg bg-[#1D3C2B] ${tool.active ? 'border-orange-500 border-2 scale-110 shadow-[0_0_15px_rgba(249,115,22,0.5)]' : 'border-white/20'}`}>
-                <div className="flex flex-col items-center"><svg className={`w-5 h-5 ${tool.active ? 'text-orange-500' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">{tool.icon}</svg><span className={`text-[8px] font-bold mt-0.5 ${tool.active ? 'text-orange-500' : 'text-white'}`}>{tool.label}</span></div>
+             <button key={tool.id} onClick={tool.action} style={{ transitionDelay: isLeftNavOpen ? `${(navTools.length-1-index)*50}ms` : '0ms', transform: isLeftNavOpen ? 'translateY(0)' : `translateY(${(navTools.length-index)*40}px)`, opacity: isLeftNavOpen ? 1 : 0, pointerEvents: isLeftNavOpen ? 'auto' : 'none' }} className={`w-14 h-14 lg:w-16 lg:h-16 flex flex-col items-center justify-center rounded-full transition-all duration-500 border shadow-lg bg-[#1D3C2B] ${tool.active ? 'border-[#00ff00] border-2 scale-110 shadow-[0_0_15px_rgba(0,255,0,0.5)]' : 'border-white/20'}`}>
+                <div className="flex flex-col items-center"><svg className={`w-5 h-5 ${tool.active ? 'text-[#00ff00]' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">{tool.icon}</svg><span className={`text-[10px] font-bold mt-0.5 ${tool.active ? 'text-[#00ff00]' : 'text-white'}`}>{tool.label}</span></div>
              </button>
            ))}
         </aside>
-        <button onClick={() => setIsLeftNavOpen(!isLeftNavOpen)} className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-[#1D3C2B] border-2 border-white flex items-center justify-center shadow-2xl z-50 pointer-events-auto active:scale-90 transition-transform"><img src={APP_LOGO_URL} className="w-10 h-10 lg:w-14 lg:h-14 object-contain" /></button>
+        <button onClick={() => setIsLeftNavOpen(!isLeftNavOpen)} className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-[#1D3C2B] border-2 border-white flex items-center justify-center shadow-2xl z-50 pointer-events-auto active:scale-90 transition-transform">
+            <img src={APP_LOGO_URL} className="w-10 h-10 lg:w-14 lg:h-14 object-contain animate-logo-cinematic" />
+        </button>
       </div>
 
       {isEditMode && (
         <div className="fixed bottom-32 left-4 right-4 z-[100] bg-black/85 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] p-4 animate-fade-in shadow-2xl flex flex-col gap-4 max-w-lg mx-auto overflow-hidden">
           <div className="flex items-center overflow-x-auto no-scrollbar gap-5 py-2 px-1 touch-pan-x scroll-smooth">
-            
-            {/* أزرار الإضافة */}
             <div className="flex gap-3 shrink-0 border-l border-white/10 pl-5">
               <button onClick={() => addNewFence('circle')} className="px-5 py-3 bg-white/10 rounded-[1.5rem] text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-2 border border-white/10 transition-colors">
                 <div className="w-5 h-5 rounded-full border-2 border-white"></div>
-                إضافة دائري
+                {t('add_circle')}
               </button>
               <button onClick={() => addNewFence('square')} className="px-5 py-3 bg-white/10 rounded-[1.5rem] text-[10px] font-black text-white hover:bg-white/20 flex flex-col items-center gap-2 border border-white/10 transition-colors">
                 <div className="w-5 h-5 border-2 border-white"></div>
-                إضافة مربع
+                {t('add_square')}
               </button>
             </div>
 
-            {/* أدوات التحكم في السياج المحدد */}
             {selectedFence && (
               <div className="flex items-center gap-6 shrink-0 border-l border-white/10 pl-5">
                 {selectedFence.type === 'circle' ? (
                   <div className="flex flex-col gap-2 w-40">
                     <div className="flex justify-between items-center">
-                      <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">القطر</label>
-                      <span className="text-[10px] text-orange-400 font-black">{selectedFence.radius}م</span>
+                      <label className="text-[10px] text-white/50 font-black tracking-widest uppercase">{t('diameter')}</label>
+                      <span className="text-xs text-[#00ff00] font-black">{selectedFence.radius}m</span>
                     </div>
                     <input 
                       type="range" 
@@ -298,15 +299,15 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
                       step="5" 
                       value={selectedFence.radius} 
                       onChange={(e) => updateSelectedFence({ radius: handleVariableSnap(parseInt(e.target.value)) })} 
-                      className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500 cursor-pointer" 
+                      className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-[#00ff00] cursor-pointer" 
                     />
                   </div>
                 ) : (
                   <>
                     <div className="flex flex-col gap-2 w-32">
                       <div className="flex justify-between items-center">
-                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">العرض</label>
-                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.width}م</span>
+                        <label className="text-[10px] text-white/50 font-black tracking-widest uppercase">{t('width')}</label>
+                        <span className="text-xs text-[#00ff00] font-black">{selectedFence.width}m</span>
                       </div>
                       <input 
                         type="range" 
@@ -315,13 +316,13 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
                         step="5" 
                         value={selectedFence.width} 
                         onChange={(e) => updateSelectedFence({ width: handleVariableSnap(parseInt(e.target.value)) })} 
-                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" 
+                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-[#00ff00]" 
                       />
                     </div>
                     <div className="flex flex-col gap-2 w-32">
                       <div className="flex justify-between items-center">
-                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">الطول</label>
-                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.height}م</span>
+                        <label className="text-[10px] text-white/50 font-black tracking-widest uppercase">{t('length')}</label>
+                        <span className="text-xs text-[#00ff00] font-black">{selectedFence.height}m</span>
                       </div>
                       <input 
                         type="range" 
@@ -330,33 +331,32 @@ const GPSPage: React.FC<{ isDarkMode?: boolean; selectedCategory: LivestockCateg
                         step="5" 
                         value={selectedFence.height} 
                         onChange={(e) => updateSelectedFence({ height: handleVariableSnap(parseInt(e.target.value)) })} 
-                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" 
+                        className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-[#00ff00]" 
                       />
                     </div>
                     <div className="flex flex-col gap-2 w-32">
                       <div className="flex justify-between items-center">
-                        <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">التدوير</label>
-                        <span className="text-[10px] text-orange-400 font-black">{selectedFence.rotation}°</span>
+                        <label className="text-[10px] text-white/50 font-black tracking-widest uppercase">{t('rotation')}</label>
+                        <span className="text-xs text-[#00ff00] font-black">{selectedFence.rotation}°</span>
                       </div>
-                      <input type="range" min="0" max="360" step="1" value={selectedFence.rotation} onChange={(e) => updateSelectedFence({ rotation: parseInt(e.target.value) })} className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-orange-500" />
+                      <input type="range" min="0" max="360" step="1" value={selectedFence.rotation} onChange={(e) => updateSelectedFence({ rotation: parseInt(e.target.value) })} className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-[#00ff00]" />
                     </div>
                   </>
                 )}
-                <button onClick={deleteSelectedFence} className="px-5 py-3 bg-red-500/10 text-red-400 rounded-[1.5rem] text-[10px] font-black border border-red-500/20 active:bg-red-500/20 transition-all">حذف السياج</button>
+                <button onClick={deleteSelectedFence} className="px-5 py-3 bg-red-500/10 text-red-400 rounded-[1.5rem] text-[10px] font-black border border-red-500/20 active:bg-red-500/20 transition-all">{t('delete_fence')}</button>
               </div>
             )}
 
-            {/* إعدادات الإنذار والحفظ */}
             <div className="flex items-center gap-5 shrink-0">
                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] text-white/50 font-black tracking-widest uppercase">توقيت الإنذار الذكي</label>
+                  <label className="text-[10px] text-white/50 font-black tracking-widest uppercase">{t('smart_alarm_time')}</label>
                   <div className="flex items-center gap-2">
-                    <input type="time" value={alarmSchedule.start} onChange={(e) => setAlarmSchedule({...alarmSchedule, start: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-orange-500" />
-                    <span className="text-white/30 text-[10px]">إلى</span>
-                    <input type="time" value={alarmSchedule.end} onChange={(e) => setAlarmSchedule({...alarmSchedule, end: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-orange-500" />
+                    <input type="time" value={alarmSchedule.start} onChange={(e) => setAlarmSchedule({...alarmSchedule, start: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-[#00ff00]" />
+                    <span className="text-white/30 text-[10px]">{t('to')}</span>
+                    <input type="time" value={alarmSchedule.end} onChange={(e) => setAlarmSchedule({...alarmSchedule, end: e.target.value})} className="bg-white/10 text-white text-[11px] p-2 rounded-xl border border-white/10 outline-none focus:border-[#00ff00]" />
                   </div>
                </div>
-               <button onClick={() => { soundService.playSuccess(); setIsEditMode(false); }} className="px-8 py-4 bg-[#1D3C2B] text-white rounded-[1.8rem] text-xs font-black shadow-xl border border-white/20 active:scale-95 transition-all hover:brightness-110">تأكيد وحفظ</button>
+               <button onClick={() => { soundService.playSuccess(); setIsEditMode(false); }} className="px-8 py-4 bg-[#1D3C2B] text-white rounded-[1.8rem] text-xs font-black shadow-xl border border-white/20 active:scale-95 transition-all hover:brightness-110">{t('confirm_save')}</button>
             </div>
           </div>
         </div>

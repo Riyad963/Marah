@@ -2,11 +2,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ActivePage, LivestockCategory } from './types.ts';
 import { analyticsService } from './services/analyticsService.ts';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext.tsx';
+import { App as CapacitorApp } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 // Layout Components
 import Header from './components/Header.tsx';
 import Sidebar from './components/Sidebar.tsx';
-import MagicStartPage from './components/MagicStartPage.tsx';
+import SplashScreen from './components/SplashScreen.tsx';
 import AuthPage from './pages/AuthPage.tsx';
 import InstallPrompt from './components/InstallPrompt.tsx'; 
 
@@ -21,7 +24,8 @@ import DevicesPage from './pages/DevicesPage.tsx';
 import BreedsPage from './pages/BreedsPage.tsx';
 import WorkersPage from './pages/WorkersPage.tsx';
 
-export default function App() {
+function MainApp() {
+  const { t, language } = useLanguage();
   const [showSplash, setShowSplash] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activePage, setActivePage] = useState<ActivePage>('الرئيسية');
@@ -58,8 +62,44 @@ export default function App() {
     }
   }, [navigationHistory]);
 
+  // --- Capacitor Native Integration ---
+  useEffect(() => {
+    // 1. Handle Status Bar
+    const configStatusBar = async () => {
+      try {
+        if (activePage === 'GPS') {
+           await StatusBar.setOverlaysWebView({ overlay: true });
+        } else {
+           await StatusBar.setOverlaysWebView({ overlay: false });
+           await StatusBar.setStyle({ style: isDarkMode ? Style.Dark : Style.Light });
+           await StatusBar.setBackgroundColor({ color: isDarkMode ? '#1D3C2B' : '#EBF2E5' });
+        }
+      } catch (e) {
+        // Fallback for web
+        console.debug('StatusBar not available');
+      }
+    };
+    configStatusBar();
+
+    // 2. Handle Android Hardware Back Button
+    const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (sidebarOpen) {
+        setSidebarOpen(false);
+      } else if (activePage === 'الرئيسية') {
+        CapacitorApp.exitApp();
+      } else {
+        goBack();
+      }
+    });
+
+    return () => {
+      backButtonListener.then(handler => handler.remove());
+    };
+  }, [activePage, isDarkMode, sidebarOpen, goBack]);
+  // ------------------------------------
+
   if (showSplash) {
-    return <MagicStartPage onFinish={() => setShowSplash(false)} />;
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
   if (!isAuthenticated) {
@@ -94,7 +134,7 @@ export default function App() {
   const isGPS = activePage === 'GPS';
 
   return (
-    <div className={`min-h-screen font-['Cairo'] flex flex-col relative overflow-hidden transition-colors duration-700 ${isDarkMode ? 'bg-[#051810] text-gray-100' : 'bg-[#EBF2E5] text-white'}`}>
+    <div className={`min-h-screen font-['Cairo'] flex flex-col relative overflow-hidden transition-colors duration-700 ${isDarkMode ? 'bg-[#051810] text-gray-100' : 'bg-[#EBF2E5] text-white'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {!isGPS && (
         <div className={`fixed inset-0 pointer-events-none z-0 transition-opacity duration-700 ${isDarkMode ? 'opacity-20' : 'opacity-100'}`}>
            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(29,60,43,0.05)_0%,transparent_100%)]"></div>
@@ -119,5 +159,13 @@ export default function App() {
       </div>
       <InstallPrompt />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <MainApp />
+    </LanguageProvider>
   );
 }

@@ -4,6 +4,7 @@ import { storageService } from '../services/storageService.ts';
 import { soundService } from '../services/soundService.ts';
 import { LivestockCategory } from '../types.ts';
 import FloatingBackButton from '../components/FloatingBackButton.tsx';
+import { useLanguage } from '../contexts/LanguageContext.tsx';
 
 interface FeedItem {
   id: string;
@@ -43,24 +44,47 @@ const FeedPage: React.FC<{
   selectedCategory: LivestockCategory; 
   onBack?: () => void;
 }> = ({ isDarkMode, userRole, userCurrency, selectedCategory, onBack }) => {
+  const { t } = useLanguage();
   const [feedStock, setFeedStock] = useState<FeedItem[]>([]);
   const [activeTab, setActiveTab] = useState<'stock' | 'calculator'>('stock');
   const [pricePerKg, setPricePerKg] = useState('1.2');
+  
+  // Calculator State
   const [rules, setRules] = useState<FeedRule[]>(DEFAULT_RULES);
   const [isEditingRules, setIsEditingRules] = useState(false);
+  const [isRulesLoaded, setIsRulesLoaded] = useState(false);
+
+  // Modals
   const [showFeedModal, setShowFeedModal] = useState(false);
   const [editingItem, setEditingItem] = useState<FeedItem | null>(null);
   const [feedForm, setFeedForm] = useState({ type: 'شعير', quantity: '', unit: 'كلغ', price: '', date: new Date().toISOString().split('T')[0] });
 
+  // Load Data
   useEffect(() => {
     const fetchData = async () => {
+      setIsRulesLoaded(false);
+      
       const loadedFeed = await storageService.load('marah_feed', []);
       setFeedStock(loadedFeed);
+      
+      // Load category-specific rules
       const savedRules = await storageService.load(`marah_feed_rules_${selectedCategory}`, null);
-      if (savedRules) setRules(savedRules);
+      if (savedRules) {
+        setRules(savedRules);
+      } else {
+        setRules(DEFAULT_RULES);
+      }
+      setIsRulesLoaded(true);
     };
     fetchData();
   }, [selectedCategory]);
+
+  // Auto-save Rules when they change (only after initial load)
+  useEffect(() => {
+    if (isRulesLoaded) {
+      storageService.save(`marah_feed_rules_${selectedCategory}`, rules);
+    }
+  }, [rules, isRulesLoaded, selectedCategory]);
 
   const totalStockKg = useMemo(() => {
     return feedStock.reduce((acc, item) => {
@@ -82,7 +106,6 @@ const FeedPage: React.FC<{
     if (!feedForm.quantity) return;
     const qty = parseFloat(feedForm.quantity);
     
-    // تحديد الحالة بناءً على الكمية
     let status: 'كافٍ' | 'منخفض' | 'حرج' = 'كافٍ';
     if (feedForm.unit === 'طن' && qty < 0.5) status = 'حرج';
     else if (feedForm.unit === 'كلغ' && qty < 50) status = 'حرج';
@@ -101,7 +124,17 @@ const FeedPage: React.FC<{
     };
     setFeedStock(prev => editingItem ? prev.map(i => i.id === editingItem.id ? newItem : i) : [newItem, ...prev]);
     setShowFeedModal(false);
+    storageService.save('marah_feed', editingItem ? feedStock.map(i => i.id === editingItem.id ? newItem : i) : [newItem, ...feedStock]);
     soundService.playSuccess();
+  };
+
+  const toggleEditMode = () => {
+    if (isEditingRules) {
+        soundService.playSuccess();
+    } else {
+        soundService.playClick();
+    }
+    setIsEditingRules(!isEditingRules);
   };
 
   const modalText = isDarkMode ? 'text-white' : 'text-[#1D3C2B]';
@@ -110,18 +143,18 @@ const FeedPage: React.FC<{
   return (
     <div className="w-full max-w-md mx-auto h-full flex flex-col relative pb-32 no-scrollbar overflow-y-auto">
       <div className="flex flex-col items-center justify-center pt-8 pb-4">
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] mb-1 opacity-40 text-white">إدارة التغذية</span>
+        <span className="text-xs font-black uppercase tracking-[0.3em] mb-1 opacity-40 text-white">{t('feed_mgmt')}</span>
         <div className="flex bg-black/10 p-1 rounded-2xl gap-1 mt-2">
-            <button onClick={() => setActiveTab('stock')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${activeTab === 'stock' ? 'bg-[#1D3C2B] text-white' : 'text-white/60'}`}>المخزون</button>
-            <button onClick={() => setActiveTab('calculator')} className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${activeTab === 'calculator' ? 'bg-[#1D3C2B] text-white' : 'text-white/60'}`}>حاسبة</button>
+            <button onClick={() => setActiveTab('stock')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${activeTab === 'stock' ? 'bg-[#1D3C2B] text-white' : 'text-white/60'}`}>{t('stock_tab')}</button>
+            <button onClick={() => setActiveTab('calculator')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${activeTab === 'calculator' ? 'bg-[#1D3C2B] text-white' : 'text-white/60'}`}>{t('calc_tab')}</button>
         </div>
       </div>
 
       {activeTab === 'stock' && (
         <div className="animate-fade-in px-4">
              <div className="text-center mb-6">
-                <span className="text-5xl font-black text-white">{Math.round(totalStockKg)}<span className="text-xl">كجم</span></span>
-                <button onClick={() => { setEditingItem(null); setFeedForm({type:'شعير', quantity:'', unit:'كلغ', price:'', date: new Date().toISOString().split('T')[0]}); setShowFeedModal(true); }} className="mt-4 bg-[#1D3C2B] text-white px-6 py-2 rounded-xl text-xs font-black mx-auto block border border-white/20">إضافة مخزون</button>
+                <span className="text-4xl font-black text-white">{Math.round(totalStockKg)}<span className="text-xl">{t('كلغ')}</span></span>
+                <button onClick={() => { setEditingItem(null); setFeedForm({type:'شعير', quantity:'', unit:'كلغ', price:'', date: new Date().toISOString().split('T')[0]}); setShowFeedModal(true); }} className="mt-4 bg-[#1D3C2B] text-white px-6 py-2 rounded-xl text-sm font-black mx-auto block border border-white/20">{t('add_stock')}</button>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 {feedStock.map(item => (
@@ -138,33 +171,129 @@ const FeedPage: React.FC<{
                             </span>
                           </div>
                         )}
-                        <h4 className="text-white/60 text-[9px] font-black uppercase">{item.type}</h4>
-                        <span className="text-2xl font-black text-white">{item.stock} {item.unit}</span>
+                        <h4 className="text-white/60 text-[11px] font-black uppercase">{t(item.type)}</h4>
+                        <span className="text-3xl font-black text-white">{item.stock} {t(item.unit)}</span>
                     </div>
                 ))}
             </div>
         </div>
       )}
 
+      {activeTab === 'calculator' && (
+        <div className="animate-fade-in px-4 pb-24">
+           {/* Summary Card */}
+           <div className="bg-[#1D3C2B] p-5 rounded-[2rem] shadow-xl mb-6 border border-white/10">
+              <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
+                 <div>
+                    <p className="text-white/60 text-[10px] font-black uppercase">{t('daily_consumption')}</p>
+                    <p className="text-2xl font-black text-white">{calcResults.dailyTotal.toFixed(1)} <span className="text-sm">{t('unit_kg')}</span></p>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-white/60 text-[10px] font-black uppercase">{t('monthly_cost')}</p>
+                    <p className="text-2xl font-black text-[#4ade80]">{Math.round(calcResults.monthlyCost).toLocaleString()} <span className="text-sm">{userCurrency}</span></p>
+                 </div>
+              </div>
+              
+              <div className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
+                 <span className="text-white text-xs font-bold whitespace-nowrap">{t('fodder_price')} ({userCurrency}/KG)</span>
+                 <input 
+                   type="number" 
+                   value={pricePerKg} 
+                   onChange={(e) => setPricePerKg(e.target.value)} 
+                   className="w-full bg-transparent text-right text-white font-black outline-none border-b border-white/20 focus:border-[#4ade80]"
+                 />
+              </div>
+           </div>
+
+           {/* Edit/Save Header */}
+           <div className="flex justify-end mb-4 px-1">
+              <button 
+                onClick={toggleEditMode}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-lg active:scale-95 ${
+                    isEditingRules 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                {isEditingRules ? t('save_changes') : t('edit')}
+              </button>
+           </div>
+
+           {/* Rules List */}
+           <div className="flex flex-col gap-3">
+              {rules.map((rule, index) => (
+                 <div key={rule.id} className={`p-4 rounded-2xl border flex items-center gap-4 transition-all duration-300 ${isEditingRules ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/10'}`}>
+                    <div className="flex-1">
+                       <p className="text-white font-bold text-sm mb-1">{t(`rule_${rule.id}`)}</p>
+                       <div className="flex items-center gap-2">
+                          {isEditingRules ? (
+                              <input 
+                                type="number" 
+                                value={rule.amount}
+                                onChange={(e) => {
+                                   const newRules = [...rules];
+                                   newRules[index].amount = e.target.value;
+                                   setRules(newRules);
+                                }}
+                                className="w-20 bg-black/40 rounded-lg px-2 py-1.5 text-center text-white text-sm font-black outline-none border border-green-500/50 focus:border-green-400 focus:bg-black/60 transition-colors"
+                              />
+                          ) : (
+                              <span className="text-white text-sm font-black bg-black/20 px-2 py-1 rounded-lg border border-white/5 min-w-[3rem] text-center">{rule.amount}</span>
+                          )}
+                          <span className="text-white/40 text-[10px] font-bold">KG/{t('head')}</span>
+                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-black/20 rounded-xl p-1.5 border border-white/5">
+                       <button 
+                         onClick={() => {
+                            const newRules = [...rules];
+                            if(newRules[index].count > 0) newRules[index].count--;
+                            setRules(newRules);
+                            soundService.playClick();
+                         }}
+                         className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white hover:bg-white/10 active:scale-90 transition-all border border-white/5"
+                       >
+                         -
+                       </button>
+                       <span className="w-8 text-center text-white font-black">{rule.count}</span>
+                       <button 
+                         onClick={() => {
+                            const newRules = [...rules];
+                            newRules[index].count++;
+                            setRules(newRules);
+                            soundService.playClick();
+                         }}
+                         className="w-8 h-8 rounded-lg bg-[#1D3C2B] flex items-center justify-center text-white hover:bg-[#2F5E45] active:scale-90 transition-all border border-white/20 shadow-md"
+                       >
+                         +
+                       </button>
+                    </div>
+                 </div>
+              ))}
+           </div>
+        </div>
+      )}
+
       {showFeedModal && (
          <div className="fixed inset-0 z-[120] flex flex-col p-4 bg-black/80 backdrop-blur-sm">
             <div className={`w-full max-w-sm rounded-[2rem] p-6 relative flex flex-col mx-auto ${isDarkMode ? 'bg-[#051810]' : 'bg-[#EBF2E5]'} border-2 ${modalBorder}`}>
-               <h3 className={`text-xl font-black mb-6 ${modalText}`}>إضافة مخزون</h3>
+               <h3 className={`text-xl font-black mb-6 ${modalText}`}>{t('add_stock')}</h3>
                <form onSubmit={submitFeed} className="flex flex-col gap-4">
                   <div className="grid grid-cols-3 gap-2">
-                    {FEED_TYPES.map(t => (
-                      <button key={t} type="button" onClick={() => setFeedForm({...feedForm, type: t})} className={`py-2 rounded-xl text-[10px] font-black border ${feedForm.type === t ? 'bg-[#1D3C2B] text-white' : 'bg-black/10 text-black'}`}>{t}</button>
+                    {FEED_TYPES.map(ft => (
+                      <button key={ft} type="button" onClick={() => setFeedForm({...feedForm, type: ft})} className={`py-2 rounded-xl text-[11px] font-black border ${feedForm.type === ft ? 'bg-[#1D3C2B] text-white' : 'bg-black/10 text-black'}`}>{t(ft)}</button>
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <input type="number" required placeholder="الكمية" value={feedForm.quantity} onChange={(e) => setFeedForm({...feedForm, quantity: e.target.value})} className="flex-1 h-12 bg-white/5 border border-white/20 rounded-xl px-4 text-white" />
+                    <input type="number" required placeholder={t('quantity')} value={feedForm.quantity} onChange={(e) => setFeedForm({...feedForm, quantity: e.target.value})} className="flex-1 h-12 bg-white/5 border border-white/20 rounded-xl px-4 text-white" />
                     <select value={feedForm.unit} onChange={(e) => setFeedForm({...feedForm, unit: e.target.value})} className="w-24 h-12 bg-white/5 border border-white/20 rounded-xl px-2 text-white text-xs">
-                      {FEED_UNITS.map(u => <option key={u} value={u} className="text-black">{u}</option>)}
+                      {FEED_UNITS.map(u => <option key={u} value={u} className="text-black">{t(u)}</option>)}
                     </select>
                   </div>
-                  <button type="submit" className="h-14 bg-[#1D3C2B] text-white rounded-2xl font-black border border-white/20">حفظ</button>
+                  <button type="submit" className="h-14 bg-[#1D3C2B] text-white rounded-2xl font-black border border-white/20">{t('save_record')}</button>
                </form>
-               <button onClick={() => setShowFeedModal(false)} className="mt-4 text-white/50 text-xs font-bold uppercase tracking-widest">إلغاء</button>
+               <button onClick={() => setShowFeedModal(false)} className="mt-4 text-white/50 text-xs font-bold uppercase tracking-widest">{t('cancel')}</button>
             </div>
          </div>
       )}
